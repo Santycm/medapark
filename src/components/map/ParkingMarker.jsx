@@ -1,42 +1,90 @@
-import { Marker, Popup } from "react-leaflet";
+import {
+    Marker,
+    Popup,
+} from 'react-leaflet'
+
+import { Link } from 'react-router'
+
+import L from 'leaflet'
+
+import markerIcon from 'leaflet/dist/images/marker-icon.png'
+import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png'
+import markerShadow from 'leaflet/dist/images/marker-shadow.png'
+
 import {
     Car,
     Bike,
 } from 'lucide-react'
 
-import { Link } from "react-router";
+const defaultIcon = L.icon({
+    iconUrl: markerIcon,
+    iconRetinaUrl: markerIcon2x,
+    shadowUrl: markerShadow,
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41],
+})
 
 const ParkingMarker = ({ parking }) => {
-  return (
-    <Marker position={[parking.latitude, parking.longitude]}>
-      <Popup>
-        <div className="min-w-52">
-          <h3 className="text-base font-bold text-slate-900">{parking.name}</h3>
+    return (
+        <Marker
+            position={[
+                parking.latitude,
+                parking.longitude,
+            ]}
+            icon={defaultIcon}
+        >
+            <Popup>
+                <div className="min-w-52">
+                    <h3 className="text-base font-bold text-slate-900">
+                        {parking.name}
+                    </h3>
 
-          <p className="mt-1 text-sm text-slate-500">{parking.address}</p>
+                    <p className="mt-1 text-sm text-slate-500">
+                        {parking.address}
+                    </p>
 
-          <div className="mt-3 space-y-1 text-sm">
-            <p className="flex items-center gap-2">
-               <Car size={16} /> <strong>{parking.availability.cars.available}</strong>{" "}
-              disponibles
-            </p>
+                    <div className="mt-3 space-y-2 text-sm text-slate-700">
+                        <div className="flex items-center gap-2">
+                            <Car
+                                size={16}
+                                strokeWidth={2}
+                            />
 
-            <p className="flex items-center gap-2">
-              <Bike size={16} /> <strong>{parking.availability.motorcycles.available}</strong>{" "}
-              disponibles
-            </p>
-          </div>
+                            <span>
+                                <strong>
+                                    {parking.availability.cars.available}
+                                </strong>{' '}
+                                carros disponibles
+                            </span>
+                        </div>
 
-          <Link
-            to={`/parking/${parking.id}`}
-            className="mt-3 block rounded-lg bg-slate-900 px-3 py-2 text-center text-sm font-semibold text-white"
-          >
-            Ver parqueadero
-          </Link>
-        </div>
-      </Popup>
-    </Marker>
-  );
-};
+                        <div className="flex items-center gap-2">
+                            <Bike
+                                size={16}
+                                strokeWidth={2}
+                            />
 
-export default ParkingMarker;
+                            <span>
+                                <strong>
+                                    {parking.availability.motorcycles.available}
+                                </strong>{' '}
+                                motos disponibles
+                            </span>
+                        </div>
+                    </div>
+
+                    <Link
+                        to={`/parking/${parking.id}`}
+                        className="mt-4 block rounded-lg bg-slate-900 px-3 py-2 text-center text-sm font-semibold text-white transition hover:bg-slate-800"
+                    >
+                        Ver parqueadero
+                    </Link>
+                </div>
+            </Popup>
+        </Marker>
+    )
+}
+
+export default ParkingMarker
