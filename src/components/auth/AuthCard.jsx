@@ -8,7 +8,7 @@ const AuthCard = ({ title, description, children, footer }) => {
           <Link to="/" className="inline-block">
             <img
               className="mx-auto h-24 w-auto"
-              src="/public/img/logo.svg"
+              src="/img/logo.svg"
               alt="MedaPark Logo"
             />
           </Link>
