@@ -21,7 +21,7 @@ opcional) y entrega:
 4. **Compatibilidad**: redirecciones de las rutas antiguas y conservación de las pantallas latentes
    (recuperar contraseña, perfil, SetupMfa).
 
-**Sin cambios en el back** (Supabase lo administran otras personas): la BD ya exige `aal2` en sus políticas.
+**Sin cambios en el back**: la BD ya exige `aal2` en sus políticas. (Si algún día se necesitara un cambio, sería un CB-NNN de 🔴 CRITICIDAD ALTA con check de autorización, según `docs/cambios-back/`.)
 
 ## Technical Context
 
@@ -37,11 +37,11 @@ opcional) y entrega:
 
 **Target Platform**: navegadores modernos (últimas 2 versiones de Chrome, Edge, Firefox y Safari), desktop y móvil ≥ 360 px; despliegue Netlify (rama `main`)
 
-**Project Type**: SPA (front únicamente) sobre un back externo (Supabase)
+**Project Type**: SPA sobre el back Supabase administrado por el equipo (esta feature no lo cambia)
 
 **Performance Goals**: transición entre pasos de autenticación < 2 s (SC-001: login completo < 60 s, dominado por el usuario)
 
-**Constraints**: no modificar Supabase (ni migraciones ni configuración); conservar las pantallas latentes; no romper las URLs publicadas (`/login`, `/verify-mfa`); textos literales de las HU
+**Constraints**: esta feature no requiere cambios en Supabase (cambios en el back solo vía CB-NNN autorizado (🔴 CRITICIDAD ALTA, `docs/cambios-back/`)); conservar las pantallas latentes; no romper las URLs publicadas (`/login`, `/verify-mfa`); textos literales de las HU
 
 **Scale/Scope**: ~20 archivos existentes a migrar; 3 pantallas de autenticación rediseñadas, el layout admin y el modal de cierre de sesión
 
@@ -52,7 +52,7 @@ opcional) y entrega:
 | Principio | Cómo se cumple | Estado |
 |-----------|----------------|--------|
 | I. HU como fuente de verdad | FR-001…FR-032 trazados a HU1, HU2 y HU8; desviaciones (TOTP y pantallas latentes) documentadas en la spec; mensajes en `src/lib/messages.ts` | ✅ |
-| II. Back externo, solo front | Ningún SQL ni migración; la BD ya exige `aal2`; el front lo refleja con guards; solo `anon key` en `.env` | ✅ |
+| II. Seguridad y control de cambios del back | No requiere cambios en el back; la BD ya exige `aal2`; el front lo refleja con guards; solo `anon key` en `.env` | ✅ |
 | III. Simplicidad y reutilización | Se migran y reutilizan `services/auth`, componentes y estructura del repo; Context + funciones puras; sin librerías de estado | ✅ |
 | IV. Reglas verificables | Vitest: `resolveAuthStage`, `toAuthErrorCode`, esquemas Zod, contador de intentos, guards (matriz completa) y páginas | ✅ |
 | V. UX en español y fiel | Tokens de `research.md` §R10, pantallas según HU01/HU02/HU08 y mocks; accesibilidad básica | ✅ |

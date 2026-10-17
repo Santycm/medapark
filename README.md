@@ -5,9 +5,10 @@ Aplicación web para consultar y gestionar parqueaderos en Medellín (MVP, traba
 - **Usuario (anónimo)**: ve en un mapa los parqueaderos activos, su disponibilidad y tarifas, y genera la ruta en Google Maps.
 - **Administrador de Parqueadero**: inicia sesión con MFA (TOTP) obligatorio y gestiona su parqueadero, sus celdas y su ocupación.
 
-**Este repo es solo el front.** Stack: Vite + React 19 + TypeScript (migración en curso desde JS) + Tailwind 4 +
-`react-router` 8 + Leaflet. El back es un proyecto de Supabase (Auth, PostgreSQL, RLS) **administrado por otras
-personas**: aquí no hay migraciones ni cambios de esquema. Ver `docs/supabase-esquema-actual.md`.
+Stack: Vite + React 19 + TypeScript (migración en curso desde JS) + Tailwind 4 + `react-router` 8 + Leaflet.
+El back es un proyecto de Supabase (Auth, PostgreSQL, RLS) administrado por el equipo: **todo cambio en el back
+es 🔴 CRITICIDAD ALTA y requiere un check de autorización** (`docs/cambios-back/`). Estado actual en
+`docs/supabase-esquema-actual.md`.
 
 ## Ramas (Gitflow)
 
@@ -25,9 +26,9 @@ personas**: aquí no hay migraciones ni cambios de esquema. Ver `docs/supabase-e
 Orden de lectura:
 
 1. `AGENTS.md`: reglas de trabajo para agentes y personas.
-2. `.specify/memory/constitution.md`: principios no negociables (incluye "back externo, solo front").
+2. `.specify/memory/constitution.md`: principios no negociables (incluye el control de cambios del back con CRITICIDAD ALTA).
 3. `docs/analisis-mvp.md`: decisiones, inconsistencias resueltas, mensajes exactos e integración con el repo existente.
-4. `docs/supabase-esquema-actual.md`: el back real (solo lectura) y una nota de permisos para su equipo.
+4. `docs/supabase-esquema-actual.md` y `docs/cambios-back/`: el back real y el control de cambios (🔴 ALTA).
 5. `specs/<feature>/`: `spec.md` → `plan.md` (+ `research.md`, `data-model.md`, `contracts/`, `quickstart.md`) → `tasks.md`.
 
 | Feature | Historias de usuario | Rama de implementación |

@@ -38,7 +38,7 @@ Dependencias: 002 depende de 001 (sesión aal2). 003 depende del esquema de 002 
 |------|----------|
 | Base de código | Repo existente `Santycm/medapark` (Vite + React + JS), **migrado a TypeScript** como primera tarea de la 001 |
 | Frontend | Vite 8 + React 19 + TypeScript (strict) + Tailwind CSS 4 + `react-router` 8 + React Hook Form + Zod + `lucide-react` |
-| Backend | **Externo, sin cambios**: Supabase en la nube, proyecto `Medapark` (`msmfidnqmqntxbcucnsf`), administrado por otras personas. Esquema real en `docs/supabase-esquema-actual.md`. Este proyecto es solo front: sin migraciones ni SQL |
+| Backend | Supabase en la nube, proyecto `Medapark` (`msmfidnqmqntxbcucnsf`), **administrado por el equipo**. Esquema real en `docs/supabase-esquema-actual.md`. **Todo cambio en el back es 🔴 CRITICIDAD ALTA con check de autorización** (`docs/cambios-back/`); las features se diseñan primero para el back tal como está |
 | MFA | TOTP nativo de Supabase Auth, **reutilizando los servicios de MFA del repo** (`enrollMfa`, `createMfaChallenge`, `verifyMfa`, `getVerifiedTotpFactor`). Se vuelve **obligatorio**. Ver §5 |
 | Mapas | Leaflet 1.9 + `react-leaflet` 5 (ya en el repo), con mosaicos CARTO/OSM y sin API key |
 | Ruta | Enlace `https://www.google.com/maps/dir/?api=1&destination=<lat>,<lng>` (sin API de Google) |
@@ -186,5 +186,6 @@ ingreso. No se enlazan desde la UI del MVP.
 El back ya implementa el modelo: `parking_lots` (1 por admin, `status` booleano), `parking_vehicle_configs`
 (`CAR`/`MOTORCYCLE`, tarifa, capacidad y ocupadas con `CHECK`), RLS por dueño + `aal2`, la vista pública
 `public_parking_lots` con la regla de publicabilidad y las RPC atómicas de ingreso y salida. El front se
-adapta a él **sin cambios en la BD**. Ver `docs/supabase-esquema-actual.md` §3 (cómo lo usa el front) y §4
-(nota de permisos para el equipo del back).
+adapta a él. La única brecha identificada (permisos de escritura del admin) es la solicitud **CB-001**
+(🔴 CRITICIDAD ALTA, pendiente de autorización). Ver `docs/supabase-esquema-actual.md` §3–§4 y
+`docs/cambios-back/`.

@@ -1,6 +1,6 @@
 # Implementation Plan: Gestión del Parqueadero por el Administrador
 
-**Branch**: `feature/002-gestion-parqueadero` | **Date**: 2026-10-17 (rev. back existente, solo front) | **Spec**: [spec.md](./spec.md)
+**Branch**: `feature/002-gestion-parqueadero` | **Date**: 2026-10-17 (rev. back existente; cambios del back vía CB-NNN, CRITICIDAD ALTA) | **Spec**: [spec.md](./spec.md)
 
 **Input**: Feature specification from `specs/002-gestion-parqueadero/spec.md`
 
@@ -21,17 +21,17 @@ Front de la gestión del parqueadero (HU3–HU7) sobre el **back existente sin c
 
 **Primary Dependencies**: las del repo + las agregadas en la 001 (react-hook-form, zod, vitest). Mapas con `leaflet` 1.9 + `react-leaflet` 5 (ya instalados). Ninguna dependencia nueva
 
-**Storage**: back externo Supabase (`parking_lots`, `parking_vehicle_configs` y RPC de ocupación), **sin cambios**
+**Storage**: Supabase (`parking_lots`, `parking_vehicle_configs` y RPC de ocupación) tal como está, más CB-001 (permisos, 🔴 ALTA, pendiente de autorización)
 
 **Testing**: Vitest + Testing Library con `supabase` simulado; validación manual con `quickstart.md`
 
 **Target Platform**: navegadores modernos, ≥ 360 px
 
-**Project Type**: SPA (solo front) sobre un back externo
+**Project Type**: SPA sobre el back Supabase administrado por el equipo (cambios del back vía CB-NNN, CRITICIDAD ALTA)
 
 **Performance Goals**: ingreso o salida reflejados en menos de 2 s (SC-002); panel en menos de 2 s
 
-**Constraints**: no modificar la BD; respetar las políticas existentes (capacidad ≥ 1 al crear un tipo, borrar solo en 0); escrituras de HU3/HU5/HU6 sujetas a los privilegios que conceda el equipo del back (nota en `docs/supabase-esquema-actual.md` §4)
+**Constraints**: cambios en el back solo vía CB-NNN autorizado (🔴 CRITICIDAD ALTA, `docs/cambios-back/`); respetar las políticas existentes (capacidad ≥ 1 al crear un tipo, borrar solo en 0); las escrituras de HU3/HU5/HU6 dependen de **CB-001** (pendiente de autorización)
 
 **Scale/Scope**: menos de 50 parqueaderos; 5 pantallas o estados
 
@@ -42,7 +42,7 @@ Front de la gestión del parqueadero (HU3–HU7) sobre el **back existente sin c
 | Principio | Cómo se cumple | Estado |
 |-----------|----------------|--------|
 | I. HU como fuente de verdad | FR trazados a HU3–HU7; *Desviaciones* (capacidad mínima 1 al crear, edición no atómica) documentadas | ✅ |
-| II. Back externo, solo front | Ningún SQL; se usan las tablas, la RLS y las RPC existentes; las reglas no expresadas en el back se validan en el front y se listan en `docs/supabase-esquema-actual.md` §3; los permisos faltantes quedan como nota para el equipo del back | ✅ |
+| II. Seguridad y control de cambios del back | Se usan las tablas, la RLS y las RPC existentes; las reglas no expresadas en el back se validan en el front (`docs/supabase-esquema-actual.md` §3); el único cambio del back necesario está en la solicitud CB-001 (🔴 ALTA, con check de autorización) | ✅ |
 | III. Simplicidad y reutilización | Context + funciones puras; reutiliza `react-leaflet` y `ParkingMap` del repo; sin librerías de datos | ✅ |
 | IV. Reglas verificables | Vitest para `validateEdit`, `diffConfigs`, publicabilidad, esquemas, mapeos, errores, el orden de escritura del servicio y las páginas | ✅ |
 | V. UX en español y fiel | Pantallas según HU03–HU07 (`contracts/ui.md`); `formatCOP`; `aria-live` en los conteos | ✅ |
@@ -121,4 +121,4 @@ las carpetas `domain/` y `context/` introducidas en la 001.
 
 | Violation | Why Needed | Simpler Alternative Rejected Because |
 |-----------|------------|-------------------------------------|
-| (Nota, no violación) Edición no atómica, con validación previa y guardado secuencial | El back no se puede modificar y no ofrece una operación atómica | Las RPC transaccionales requerirían cambiar la BD (prohibido) |
+| (Nota, no violación) Edición no atómica, con validación previa y guardado secuencial | El back no ofrece una operación atómica y se minimizan los cambios de criticidad ALTA | Las RPC transaccionales requerirían un cambio en el back (CB-NNN con autorización); queda como mejora futura opcional |

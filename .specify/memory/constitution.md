@@ -1,6 +1,8 @@
 <!--
 Sync Impact Report
-- Version change: 2.0.0 → 2.1.0 (MINOR: los cambios se hacen solo con IA; AGENTS.md es vinculante; CHANGELOG obligatorio)
+- Version change: 2.1.0 → 3.0.0 (MAJOR: Principio II redefinido; el equipo administra el back y todo cambio en él
+  es de CRITICIDAD ALTA con check de autorización obligatorio, ver docs/cambios-back/)
+- Previous: 2.0.0 → 2.1.0 (MINOR: los cambios se hacen solo con IA; AGENTS.md es vinculante; CHANGELOG obligatorio)
 - Previous: 1.0.1 → 2.0.0 (MAJOR: Principio II redefinido; integración con el repo Santycm/medapark)
   - Principio II (redefinido): el back (Supabase) es externo y lo administran otras personas. Este proyecto
     es solo front: no hay migraciones ni cambios de esquema. Los agentes de IA solo leen el Supabase remoto.
@@ -46,26 +48,32 @@ Sync Impact Report
 **Rationale**: es un trabajo evaluado sobre un documento de HU firmado. La trazabilidad es el criterio de
 calidad principal.
 
-### II. Seguridad: el back existente es la fuente de verdad (NON-NEGOTIABLE)
+### II. Seguridad y control de cambios del back (NON-NEGOTIABLE)
 
-- El back es el proyecto Supabase `Medapark`, **administrado por otras personas**. Este proyecto es
-  **solo front**: MUST NOT crear migraciones, funciones, políticas, permisos ni cambios de configuración en
-  Supabase, ni versionar SQL de esquema. El front MUST adaptarse a la BD tal como está, documentada en
-  `docs/supabase-esquema-actual.md`.
-- **Los agentes de IA solo leen el Supabase remoto**. Están permitidos `supabase gen types`,
-  `supabase db query` con `SELECT` y la lectura de metadatos. Todo lo demás está prohibido.
-- El control de acceso real lo hace el back (RLS por dueño + `aal2` y las RPC existentes). El front MUST
-  respetarlo y reflejarlo en la UX (guards de ruta, botones deshabilitados), pero nunca reemplazarlo:
-  ocultar botones no cuenta como seguridad.
-- Las reglas de negocio que el back no expresa (por ejemplo, el teléfono solo con dígitos o "al menos un
-  tipo atendido") MUST validarse en el front y quedar listadas en `docs/supabase-esquema-actual.md` §3.
-- Si el front necesita algo que el back no permite, MUST documentarse como **nota para el equipo del back**
-  (`docs/supabase-esquema-actual.md` §4) y manejarse en la UI con un error controlado, sin crear SQL.
+- El back es el proyecto Supabase `Medapark` (`msmfidnqmqntxbcucnsf`), **administrado por el equipo**. Su
+  estado real está documentado en `docs/supabase-esquema-actual.md`. Las features se diseñan primero para
+  funcionar con el back tal como está.
+- **Todo cambio en el back es de CRITICIDAD ALTA 🔴 y requiere un check de autorización explícito antes de
+  ejecutarse** (esquema, RLS, permisos, funciones, vistas, triggers, configuración de Auth, datos fuera del
+  uso normal de la app). El proceso en `docs/cambios-back/README.md` es obligatorio:
+  1. solicitud `CB-NNN` con el SQL exacto, el impacto, los riesgos y la **reversión**;
+  2. migración versionada en `supabase/migrations/`;
+  3. **check de autorización**: el agente o la persona se detiene y obtiene un "Autorizo CB-NNN" explícito
+     de una persona responsable del back. La autorización es por cambio y nunca se generaliza;
+  4. ejecución y registro;
+  5. sincronización de la documentación, los tipos, las specs y el `CHANGELOG` (`[CRITICIDAD ALTA]`).
+- Las lecturas (`supabase gen types`, `db query` con `SELECT`, `db dump` de esquema) no requieren
+  autorización.
+- El control de acceso real lo hace el back (RLS por dueño + `aal2` y las RPC). El front MUST respetarlo y
+  reflejarlo en la UX (guards, botones deshabilitados), pero nunca reemplazarlo: ocultar botones no cuenta
+  como seguridad.
+- Las reglas de negocio que el back no expresa MUST validarse en el front y quedar listadas en
+  `docs/supabase-esquema-actual.md` §3.
 - En el repositorio solo MUST existir la URL del proyecto y la *anon key* (vía `.env`, nunca versionado).
   La *service role key* MUST NOT usarse en el front ni versionarse.
 
-**Rationale**: el back es compartido y lo gestiona otro equipo, así que el front no debe alterarlo. La
-seguridad efectiva vive en la BD; el front la complementa con la UX.
+**Rationale**: el back es compartido y alimenta producción; un cambio sin control puede exponer datos o
+romper la app publicada. El check de autorización deja trazabilidad de cada decisión.
 
 ### III. Simplicidad de MVP
 
@@ -76,7 +84,7 @@ seguridad efectiva vive en la BD; el front la complementa con la UX.
 - No se agregan librerías de estado global, ORMs, ni capas de abstracción (repositorios, DI) mientras un
   hook o un módulo `lib/` sea suficiente. Cualquier excepción MUST justificarse en *Complexity Tracking*
   del plan.
-- Un único proyecto frontend (`src/`) y ninguna carpeta de backend (el back es externo). La organización de `src/`
+- Un único proyecto frontend (`src/`) y `supabase/migrations/` solo para cambios del back autorizados. La organización de `src/`
   sigue las convenciones del repo existente: `pages/`, `components/<área>/`, `services/`, `lib/` y
   `router/`, más `context/`, `hooks/` y `domain/` para el estado compartido y las reglas puras.
 - El código existente se **reutiliza y migra**; no se reescribe desde cero lo que ya funciona (por ejemplo,
@@ -120,12 +128,13 @@ mano en cada entrega.
   (`strict`) + Tailwind CSS 4 (`@tailwindcss/vite`) + `react-router` 8 + React Hook Form + Zod. Mapas con
   Leaflet 1.9 + `react-leaflet` 5 (OpenStreetMap/CARTO, sin API key). Cliente `@supabase/supabase-js` v2.
   Íconos con `lucide-react`.
-- **Back (externo, sin cambios)**: Supabase en la nube, proyecto `Medapark` (`msmfidnqmqntxbcucnsf`,
-  PostgreSQL 17): Auth (email/contraseña + MFA TOTP), tablas `parking_lots` y `parking_vehicle_configs`, la
-  vista `public_parking_lots` y las RPC `register_vehicle_entry`/`register_vehicle_exit`. El repo no tiene
-  carpeta `supabase/`. Los tipos se generan (solo lectura) con
+- **Back (administrado por el equipo, cambios con control de CRITICIDAD ALTA)**: Supabase en la nube,
+  proyecto `Medapark` (`msmfidnqmqntxbcucnsf`, PostgreSQL 17): Auth (email/contraseña + MFA TOTP), tablas
+  `parking_lots` y `parking_vehicle_configs`, la vista `public_parking_lots` y las RPC
+  `register_vehicle_entry`/`register_vehicle_exit`. Los cambios autorizados se versionan en
+  `supabase/migrations/` (solicitudes en `docs/cambios-back/`). Los tipos se generan (solo lectura) con
   `npx supabase gen types typescript --project-id msmfidnqmqntxbcucnsf > src/lib/database.types.ts`.
-- **Sin servidores propios**, Edge Functions ni SQL propio.
+- **Sin servidores propios** ni Edge Functions. El SQL solo existe como migraciones autorizadas (CB-NNN).
 - **Rutas externas**: Google Maps solo mediante URL (`https://www.google.com/maps/dir/?api=1&destination=lat,lng`).
 - **Despliegue**: Netlify publica automáticamente la rama `main` (SPA con `public/_redirects`).
 - **Navegadores**: las dos últimas versiones de Chrome, Edge, Firefox y Safari (desktop y móvil).
@@ -163,4 +172,4 @@ mano en cada entrega.
   `.github/copilot-instructions.md`) y en el `plan.md` de la feature activa. Cualquier cambio a la forma de
   trabajo MUST reflejarse a la vez en esta constitución y en `AGENTS.md`.
 
-**Version**: 2.1.0 | **Ratified**: 2026-10-17 | **Last Amended**: 2026-10-17
+**Version**: 3.0.0 | **Ratified**: 2026-10-17 | **Last Amended**: 2026-10-17

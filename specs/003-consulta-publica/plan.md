@@ -1,6 +1,6 @@
 # Implementation Plan: Consulta Pública de Parqueaderos
 
-**Branch**: `feature/003-consulta-publica` | **Date**: 2026-10-17 (rev. back existente, solo front) | **Spec**: [spec.md](./spec.md)
+**Branch**: `feature/003-consulta-publica` | **Date**: 2026-10-17 (rev. back existente; cambios del back vía CB-NNN, CRITICIDAD ALTA) | **Spec**: [spec.md](./spec.md)
 
 **Input**: Feature specification from `specs/003-consulta-publica/spec.md`
 
@@ -29,7 +29,7 @@ Los datos salen de la vista existente `public_parking_lots` (back sin cambios), 
 
 **Target Platform**: navegadores modernos, desktop y móvil (≥ 360 px)
 
-**Project Type**: SPA (solo front) sobre un back externo
+**Project Type**: SPA sobre el back Supabase administrado por el equipo (cambios del back vía CB-NNN, CRITICIDAD ALTA)
 
 **Performance Goals**: mapa con datos en menos de 3 s en 4G (SC-002); una sola petición
 
@@ -44,7 +44,7 @@ Los datos salen de la vista existente `public_parking_lots` (back sin cambios), 
 | Principio | Cómo se cumple | Estado |
 |-----------|----------------|--------|
 | I. HU como fuente de verdad | FR-001…FR-018 trazados a HU9–HU11; desviaciones de los prototipos documentadas | ✅ |
-| II. Back externo, solo front | Solo lectura de la vista existente, que ya aplica la publicabilidad y oculta `admin_id`; ningún SQL | ✅ |
+| II. Seguridad y control de cambios del back | Solo lectura de la vista existente, que ya aplica la publicabilidad y oculta `admin_id`; no requiere cambios en el back | ✅ |
 | III. Simplicidad y reutilización | Se reutilizan el servicio y los componentes de mapa del repo; estado local + query string | ✅ |
 | IV. Reglas verificables | Vitest para el mapeo de la vista, la URL de Maps, lleno, resumen y los componentes | ✅ |
 | V. UX en español y fiel | Layout HU09/HU10/HU11; `formatCOP`; dialog accesible en móvil | ✅ |

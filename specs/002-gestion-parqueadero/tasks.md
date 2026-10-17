@@ -1,5 +1,5 @@
 ---
-description: "Task list for 002-gestion-parqueadero (solo front, back existente sin cambios)"
+description: "Task list for 002-gestion-parqueadero (back existente; cambios del back solo vía CB-NNN autorizado)"
 ---
 
 # Tasks: Gestión del Parqueadero por el Administrador
@@ -10,7 +10,7 @@ description: "Task list for 002-gestion-parqueadero (solo front, back existente 
 
 **Tests**: OBLIGATORIAS (Principio IV): Vitest con `supabase` simulado. Nada contra el Supabase remoto.
 
-**⚠️ Reglas**: **no** crear SQL, migraciones ni cambios en Supabase; respetar las políticas del back (capacidad ≥ 1 al crear un tipo; borrar un tipo solo con capacidad y ocupadas en 0); no hacer push a `main`.
+**⚠️ Reglas**: cambios en el back solo vía CB-NNN autorizado (🔴 CRITICIDAD ALTA, `docs/cambios-back/`) (esta feature solo depende de **CB-001**, que no se ejecuta sin autorización); respetar las políticas del back (capacidad ≥ 1 al crear un tipo; borrar un tipo solo con capacidad y ocupadas en 0); no hacer push a `main`.
 
 **Organization**: US1 = HU3 Registrar (P1), US2 = HU4 Panel (P1), US3 = HU7 Ocupación (P2), US4 = HU5 Editar (P2), US5 = HU6 Celdas (P3).
 
@@ -103,7 +103,7 @@ description: "Task list for 002-gestion-parqueadero (solo front, back existente 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
 - [ ] T034 [P] Revisión responsive (360, 768 y 1280 px) y de accesibilidad (labels, `aria-describedby`, `aria-live`, foco al primer error, latitud y longitud como alternativa al mapa)
-- [ ] T035 [P] Verificar que el repo **no** contiene SQL ni carpeta `supabase/migrations` (`git ls-files "*.sql"` vacío) y que ninguna escritura omite `.select('id')`
+- [ ] T035 [P] Verificar que todo `.sql` del repo esté en `supabase/migrations/` y corresponda a una solicitud `CB-NNN` **autorizada** (`git ls-files "*.sql"`), y que ninguna escritura omita `.select('id')`
 - [ ] T036 `npm run lint`, `npm run typecheck`, `npm test` y `npm run build` en verde
 - [ ] T037 Validación manual de `quickstart.md` (incluido el caso de permisos del back) con los resultados en `specs/002-gestion-parqueadero/checklists/validacion-manual.md`
 - [ ] T038 Actualizar `CLAUDE.md` y `README.md` si cambió algún comando
