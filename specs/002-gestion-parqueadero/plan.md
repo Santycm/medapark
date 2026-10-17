@@ -1,38 +1,39 @@
 # Implementation Plan: Gestión del Parqueadero por el Administrador
 
-**Branch**: `002-gestion-parqueadero` | **Date**: 2026-10-17 | **Spec**: [spec.md](./spec.md)
+**Branch**: `feature/002-gestion-parqueadero` | **Date**: 2026-10-17 (rev. back existente, solo front) | **Spec**: [spec.md](./spec.md)
 
 **Input**: Feature specification from `specs/002-gestion-parqueadero/spec.md`
 
 ## Summary
 
-Sobre la base de la 001 (sesión aal2, `AdminLayout`, guards y helper `es_sesion_aal2`), esta feature agrega:
+Front de la gestión del parqueadero (HU3–HU7) sobre el **back existente sin cambios**:
 
-- **Backend**: las tablas `parqueaderos` y `ofertas_vehiculo` con `CHECK`, RLS de solo lectura para el dueño
-  con aal2, y 5 RPC `security definer` que concentran todas las escrituras y reglas de negocio (registro,
-  edición atómica, configuración de celdas, ingreso y salida atómicos).
-- **Frontend**: `MiParqueaderoProvider`, el panel HU4, el formulario compartido de registro y edición con el
-  mapa selector Leaflet, la pantalla "Configurar celdas" y la pantalla "Gestionar ocupación".
+- lectura del parqueadero propio con sus configuraciones por tipo (RLS del back: dueño + aal2);
+- registro y edición con escrituras directas a `parking_lots` y `parking_vehicle_configs`, con validación
+  previa completa y orden de guardado seguro (`contracts/back-usage.md`);
+- configuración de celdas (`update` de `total_spaces`);
+- ingresos y salidas con las RPC existentes `register_vehicle_entry` y `register_vehicle_exit`;
+- UI: panel HU4, formulario compartido con el mapa selector, pantallas de celdas y de ocupación.
 
 ## Technical Context
 
-**Language/Version**: TypeScript 5 (strict), SQL/PLpgSQL (PostgreSQL de Supabase)
+**Language/Version**: TypeScript 5 (strict), sobre la base migrada en la 001
 
-**Primary Dependencies**: las de la 001 + `leaflet@1.9` y `react-leaflet@4.2` (React 18) + `@types/leaflet`; dev: `otpauth` (solo para la prueba de integración opcional)
+**Primary Dependencies**: las del repo + las agregadas en la 001 (react-hook-form, zod, vitest). Mapas con `leaflet` 1.9 + `react-leaflet` 5 (ya instalados). Ninguna dependencia nueva
 
-**Storage**: Supabase PostgreSQL: `public.parqueaderos` y `public.ofertas_vehiculo` (ver `data-model.md`)
+**Storage**: back externo Supabase (`parking_lots`, `parking_vehicle_configs` y RPC de ocupación), **sin cambios**
 
-**Testing**: Vitest + Testing Library (dominio, esquema, mapeos, errores, componentes con lógica) y pgTAP (`supabase/tests/002_*.test.sql`, 6 archivos)
+**Testing**: Vitest + Testing Library con `supabase` simulado; validación manual con `quickstart.md`
 
-**Target Platform**: la de la 001 (navegadores modernos, ≥ 360 px)
+**Target Platform**: navegadores modernos, ≥ 360 px
 
-**Project Type**: SPA + BaaS
+**Project Type**: SPA (solo front) sobre un back externo
 
-**Performance Goals**: ingreso o salida reflejados en menos de 2 s (SC-002); panel con datos en menos de 2 s
+**Performance Goals**: ingreso o salida reflejados en menos de 2 s (SC-002); panel en menos de 2 s
 
-**Constraints**: escrituras solo por RPC; sin `parqueadero_id` enviado por el cliente; sin datos de ejemplo; textos literales de HU3 a HU7
+**Constraints**: no modificar la BD; respetar las políticas existentes (capacidad ≥ 1 al crear un tipo, borrar solo en 0); escrituras de HU3/HU5/HU6 sujetas a los privilegios que conceda el equipo del back (nota en `docs/supabase-esquema-actual.md` §4)
 
-**Scale/Scope**: menos de 50 parqueaderos; 5 pantallas o estados (panel vacío, panel, formulario × 2 modos, celdas, ocupación)
+**Scale/Scope**: menos de 50 parqueaderos; 5 pantallas o estados
 
 ## Constitution Check
 
@@ -40,11 +41,11 @@ Sobre la base de la 001 (sesión aal2, `AdminLayout`, guards y helper `es_sesion
 
 | Principio | Cómo se cumple | Estado |
 |-----------|----------------|--------|
-| I. HU como fuente de verdad | FR-001…FR-030 trazados a HU3–HU7; tabla *Desviaciones e interpretaciones* en la spec; mensajes en `MSG` | ✅ |
-| II. Seguridad en BD | RLS en ambas tablas; `revoke` de las escrituras directas; RPC `security definer` con `es_sesion_aal2()`, propiedad por `auth.uid()` y `search_path = ''`; `CHECK` para las invariantes; pgTAP de aislamiento | ✅ |
-| III. Simplicidad | 2 tablas, 5 RPC, Context en lugar de librerías de datos; formulario único para HU3 y HU5; sin seed | ✅ (ver la nota sobre `security definer` en *Complexity Tracking*) |
-| IV. Reglas verificables | Funciones puras en `domain.ts`, `formMapping.ts` y `rpcErrors.ts` con Vitest; 6 suites pgTAP; prueba de concurrencia opcional | ✅ |
-| V. UX en español y fiel | Pantallas según HU03 a HU07 (`contracts/ui.md`); `formatCOP` es-CO; `aria-live` en los conteos | ✅ |
+| I. HU como fuente de verdad | FR trazados a HU3–HU7; *Desviaciones* (capacidad mínima 1 al crear, edición no atómica) documentadas | ✅ |
+| II. Back externo, solo front | Ningún SQL; se usan las tablas, la RLS y las RPC existentes; las reglas no expresadas en el back se validan en el front y se listan en `docs/supabase-esquema-actual.md` §3; los permisos faltantes quedan como nota para el equipo del back | ✅ |
+| III. Simplicidad y reutilización | Context + funciones puras; reutiliza `react-leaflet` y `ParkingMap` del repo; sin librerías de datos | ✅ |
+| IV. Reglas verificables | Vitest para `validateEdit`, `diffConfigs`, publicabilidad, esquemas, mapeos, errores, el orden de escritura del servicio y las páginas | ✅ |
+| V. UX en español y fiel | Pantallas según HU03–HU07 (`contracts/ui.md`); `formatCOP`; `aria-live` en los conteos | ✅ |
 
 **Post-design re-check**: ✅ Sin violaciones.
 
@@ -54,98 +55,70 @@ Sobre la base de la 001 (sesión aal2, `AdminLayout`, guards y helper `es_sesion
 
 ```text
 specs/002-gestion-parqueadero/
-├── plan.md
-├── research.md
-├── data-model.md
-├── quickstart.md
+├── plan.md · research.md · data-model.md · quickstart.md
 ├── contracts/
-│   ├── db-schema.md        # SQL normativo: tablas, RLS, RPC y pruebas pgTAP
-│   ├── parqueadero-api.md  # API TS, dominio, mapeos y mensajes
-│   └── ui.md               # rutas, guards, menú y pantallas
+│   ├── back-usage.md     # consultas, orden de escritura, RPC y mapeo de errores (back sin cambios)
+│   ├── frontend-api.md   # dominio, formulario, provider, formatos y mensajes
+│   └── ui.md             # rutas, guards, menú y pantallas
 ├── checklists/requirements.md
 └── tasks.md
 ```
 
-### Source Code (nuevos o modificados)
+### Source Code (nuevos o modificados sobre la 001)
 
 ```text
 src/
 ├── lib/
-│   ├── result.ts                      # NUEVO: type Result<T, C extends string> (la 001 lo reutiliza; refactor menor)
-│   ├── format.ts                      # NUEVO: formatCOP, formatCoord, normalizeDecimal
-│   ├── database.types.ts              # NUEVO: generado con supabase gen types
-│   └── messages.ts                    # MODIFICADO: secciones parqueadero, celdas, ocupacion
+│   ├── format.ts (+ .test.ts)                 NUEVO
+│   └── messages.ts                            MOD: parqueadero, celdas, ocupacion
+├── domain/
+│   ├── parking.ts (+ .test.ts)                NUEVO: tipos y reglas puras
+│   ├── parkingForm.ts (+ .test.ts)            NUEVO: mapeo del formulario
+│   └── schemas/parking.ts (+ .test.ts)        NUEVO: makeParkingFormSchema, spacesSchema
+├── services/
+│   ├── adminParking.ts (+ .test.ts)           NUEVO: back-usage.md §2–§6
+│   └── parkingErrors.ts (+ .test.ts)          NUEVO: back-usage.md §7
+├── context/MyParkingProvider.tsx              NUEVO
+├── hooks/useMyParking.ts                      NUEVO
+├── router/
+│   ├── index.tsx                              MOD: rutas de la 002
+│   └── guards/RequireParking.tsx · RequireNoParking.tsx (+ guards.test.tsx)   NUEVOS
 ├── components/
-│   ├── ui/
-│   │   ├── Checkbox.tsx               # NUEVO
-│   │   ├── RadioCard.tsx              # NUEVO (estado Activo/Inactivo, tipo de vehículo)
-│   │   ├── NumberStepper.tsx          # NUEVO (− input +)
-│   │   ├── Badge.tsx                  # NUEVO (estado)
-│   │   └── Breadcrumbs.tsx            # NUEVO
-│   ├── map/
-│   │   ├── MapBase.tsx                # NUEVO (la 003 lo reutiliza)
-│   │   ├── markerIcons.ts             # NUEVO (la 003 lo reutiliza)
-│   │   └── LocationPicker.tsx         # NUEVO
-│   └── layout/AdminSidebar.tsx        # MODIFICADO: ítems condicionados a useMiParqueadero
-├── features/parqueadero/
-│   ├── types.ts
-│   ├── domain.ts (+ .test.ts)
-│   ├── schemas.ts (+ .test.ts)        # parqueaderoFormSchema, celdasSchema
-│   ├── formMapping.ts (+ .test.ts)
-│   ├── rpcErrors.ts (+ .test.ts)
-│   ├── parqueaderoService.ts (+ .test.ts)
-│   ├── MiParqueaderoProvider.tsx
-│   ├── guards/
-│   │   ├── RequireParqueadero.tsx
-│   │   └── RequireSinParqueadero.tsx  (+ guards.test.tsx)
-│   ├── components/
-│   │   ├── ParqueaderoForm.tsx (+ .test.tsx)
-│   │   ├── ParqueaderoResumen.tsx
-│   │   ├── DisponibilidadCards.tsx
-│   │   └── AvisoPublicacion.tsx
-│   └── pages/
-│       ├── PanelPage.tsx (+ .test.tsx)
-│       ├── RegistrarParqueaderoPage.tsx
-│       ├── EditarParqueaderoPage.tsx
-│       ├── ConfigurarCeldasPage.tsx (+ .test.tsx)
-│       └── GestionarOcupacionPage.tsx (+ .test.tsx)
-├── pages/admin/PanelPage.tsx          # ELIMINADO (placeholder de la 001; la ruta usa features/parqueadero/pages/PanelPage)
-└── app/router.tsx                     # MODIFICADO: rutas nuevas, MiParqueaderoProvider en AdminLayout
-
-supabase/
-├── migrations/20261017000200_parqueaderos.sql
-└── tests/002_schema|rls|rpc_registrar|rpc_actualizar|rpc_celdas|rpc_ocupacion.test.sql
-
-tests/integration/ocupacion-concurrente.test.ts   # opcional (skipIf sin variables E2E_*)
+│   ├── common/Checkbox.tsx · RadioCard.tsx · NumberStepper.tsx · Badge.tsx · Breadcrumbs.tsx   NUEVOS
+│   ├── layout/AdminLayout.tsx · AdminSidebar.tsx   MOD: MyParkingProvider e ítems condicionales
+│   ├── map/MapBase.tsx · markerIcons.ts · LocationPicker.tsx   NUEVOS (ParkingMap/ParkingMarker no cambian aquí)
+│   └── parking/ParkingForm.tsx (+ .test.tsx) · ParkingSummary.tsx · AvailabilityCards.tsx · PublishNotice.tsx   NUEVOS
+└── pages/app/
+    ├── Panel.tsx (+ .test.tsx)                MOD: reemplaza el placeholder (HU4)
+    ├── RegisterParking.tsx · EditParking.tsx (+ .test.tsx)   NUEVOS
+    ├── ConfigureSpaces.tsx (+ .test.tsx)      NUEVO
+    └── ManageOccupancy.tsx (+ .test.tsx)      NUEVO
 ```
 
-**Structure Decision**: se mantiene la estructura de la 001. Toda la lógica nueva vive en
-`src/features/parqueadero`; los componentes de mapa van a `src/components/map` porque la 003 los reutiliza.
+**Structure Decision**: se sigue la organización del repo (pages/app, components/<área>, services) con
+las carpetas `domain/` y `context/` introducidas en la 001.
 
 ## Design Notes
 
-1. **Orden de implementación sugerido**: migración + pgTAP → `database.types.ts` → dominio, esquemas y
-   mapeos → servicio → Provider y guards → panel → formulario → celdas → ocupación.
-2. **Desmarcar un tipo en la edición** (FR-018): en `ParqueaderoForm`, el `onChange` del checkbox consulta
-   `puedeQuitarTipo(ofertaGuardada)`. Si devuelve `false`, no cambia el valor y muestra la advertencia bajo el
-   grupo. El servidor lo revalida (`TIPO_CON_CELDAS`).
-3. **Ocultar los campos de un tipo desmarcado**: se desregistran (`shouldUnregister: true` en esos campos o
-   `unregister`) para que `superRefine` no los valide.
-4. **`LocationPicker` y campos de texto**: estado único en react-hook-form (`latitud` y `longitud` como
-   string). El mapa lee los valores con `watch` y solo mueve el marcador si ambos son válidos. El clic o
-   arrastre escribe con `setValue(..., { shouldValidate: true, shouldDirty: true })`.
-5. **Leaflet en pruebas**: jsdom no soporta Leaflet bien; en las pruebas de `ParqueaderoForm`, mockear
-   `src/components/map/LocationPicker` con un componente simple.
-6. **Tras ingreso o salida** se usa la fila devuelta por la RPC (`actualizarOferta`) para actualizar la UI
-   sin recargar todo. Tras registrar, editar o configurar celdas se hace `await recargar()` antes de navegar
-   al panel.
-7. **Tipos generados**: después de `db push`, ejecutar `npx supabase gen types typescript --linked >
-   src/lib/database.types.ts` y versionarlo.
-8. **`Result` genérico**: se mueve a `src/lib/result.ts` como `Result<T, C extends string = string>` y
-   `authService` (001) pasa a importarlo. Es un cambio mecánico y no altera el comportamiento.
+1. **Orden sugerido**: tipos generados (ya existen de la 001) → dominio, esquemas y mapeos → `parkingErrors`
+   → `adminParking` → Provider y guards → panel → formulario + registro → ocupación → edición → celdas.
+2. **Validación previa de la edición**: `updateParkingLot` vuelve a llamar `getMyParkingLot()` antes de
+   escribir y ejecuta `validateEdit(current.configs, desired)`. Si hay error, no escribe nada.
+3. **Escrituras con `.select('id')`**: necesarias para detectar los `update`/`delete` que la RLS deja en 0
+   filas sin error.
+4. **`LocationPicker` y campos**: un único estado en react-hook-form (`latitude`/`longitude` como
+   string). El mapa observa con `watch` y escribe con
+   `setValue(..., { shouldValidate: true, shouldDirty: true })`.
+5. **Leaflet en pruebas**: mockear `components/map/LocationPicker` en las pruebas del formulario.
+6. **Tras ingreso o salida**: `applyOccupancy(configId, occupied)` con el valor devuelto por la RPC; tras
+   registrar, editar o configurar: `await reload()` y navegar con `flash`.
+7. **Panel con parqueadero sin tipos** (registro incompleto): muestra `avisoSinTipos`, deshabilita
+   "Gestionar ocupación" y "Configurar celdas" y deja "Editar información".
+8. **Permisos del back**: si la operación devuelve `42501`, se muestra `MSG.general.permisoDenegado` y no se
+   navega. Esto es esperado mientras el equipo del back no conceda `INSERT`/`UPDATE`.
 
 ## Complexity Tracking
 
 | Violation | Why Needed | Simpler Alternative Rejected Because |
 |-----------|------------|-------------------------------------|
-| (No es violación; nota) Funciones `security definer` | Las reglas entre filas y la atomicidad (edición + capacidad, ingreso/salida) requieren un camino único de escritura | Escrituras directas con RLS + triggers dispersan las reglas y no garantizan la atomicidad de varias tablas desde el cliente |
+| (Nota, no violación) Edición no atómica, con validación previa y guardado secuencial | El back no se puede modificar y no ofrece una operación atómica | Las RPC transaccionales requerirían cambiar la BD (prohibido) |

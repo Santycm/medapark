@@ -2,14 +2,14 @@
 
 ## 0. Prerrequisitos
 
-- La feature 001 implementada y validada. Dos administradores con MFA enrolado: `admin1@medapark.test` y
-  `admin2@medapark.test`.
-- Migración aplicada y tipos generados:
-
-```bash
-npx supabase db push
-npx supabase gen types typescript --linked > src/lib/database.types.ts
-```
+- Feature 001 implementada y validada.
+- Dos administradores con MFA enrolado: `admin1` (**sin** parqueadero) y `admin2` (sin parqueadero), creados
+  por el equipo del back.
+- **Dependencia del back** (`docs/supabase-esquema-actual.md` §4): para US1, US4 y US5, el equipo del back
+  debe haber concedido `INSERT`/`UPDATE` a `authenticated` en `parking_lots` y `parking_vehicle_configs`. Si
+  no, esas operaciones deben mostrar "No tienes permisos para realizar esta acción. Contacta al
+  administrador del sistema." (validar también este caso).
+- Nunca se modifica la BD desde este proyecto.
 
 ## 1. Verificación automatizada
 
@@ -17,14 +17,7 @@ npx supabase gen types typescript --linked > src/lib/database.types.ts
 npm run lint
 npm run typecheck
 npm test
-npx supabase test db --linked     # 001_* y 002_* en verde
-```
-
-Opcional (concurrencia, SC-003). Requiere un admin de pruebas con parqueadero que atienda automóviles con
-capacidad ≥ 50 y su secreto TOTP:
-
-```bash
-E2E_ADMIN_EMAIL=... E2E_ADMIN_PASSWORD=... E2E_TOTP_SECRET=... npx vitest run tests/integration
+npm run build
 ```
 
 ## 2. Validación manual por user story
@@ -33,64 +26,61 @@ E2E_ADMIN_EMAIL=... E2E_ADMIN_PASSWORD=... E2E_TOTP_SECRET=... npx vitest run te
 
 | # | Paso | Esperado |
 |---|------|----------|
-| 1 | Login completo | Panel con "Aún no has registrado tu parqueadero" y el botón "Registrar parqueadero"; el menú solo muestra "Mi parqueadero" |
+| 1 | Login completo | Panel "Aún no has registrado tu parqueadero"; el menú solo muestra "Mi parqueadero" |
 | 2 | "Registrar parqueadero" → "Guardar" vacío | "Debe completar los campos obligatorios" y los campos en rojo |
 | 3 | Teléfono `300-123` | "Solo se permiten caracteres numéricos." |
 | 4 | Correo `contacto@dominio` | "Debe tener un formato de correo electrónico válido." |
-| 5 | Latitud `95` / longitud `-181` | "Rango válido: -90 a 90." / "Rango válido: -180 a 180." |
-| 6 | Latitud `4.7110`, longitud `-74.0721` | Aviso "La ubicación está fuera de Medellín. Verifica las coordenadas." (no bloquea) |
+| 5 | Latitud `95` / longitud `-181` | Mensajes de rango |
+| 6 | Latitud `4.7110`, longitud `-74.0721` | Aviso "La ubicación está fuera de Medellín…" (no bloquea) |
 | 7 | Clic en el mapa cerca del Parque Berrío | Latitud y longitud se llenan (≈ 6.2518, −75.5680) |
-| 8 | Marcar Automóviles → aparecen tarifa y capacidad; desmarcar → desaparecen | OK |
-| 9 | Datos: "Parqueadero Centro", "Calle 50 # 45-10, Medellín", tel. `3001234567`, horario "Lunes a Domingo, 6:00 a.m. - 10:00 p.m.", Automóviles $5000 / 2 celdas, Motocicletas $2000 / 0 celdas → "Guardar" | "Parqueadero registrado exitosamente"; el panel muestra todo, el badge "Activo", "Automóviles: 2 disponibles / 2" y "Motocicletas: 0 disponibles / 0" |
-| 10 | Abrir `/admin/parqueadero/registrar` por URL | Redirige a `/admin` |
+| 8 | Marcar Automóviles con capacidad `0` | "Ingresa un valor entero entre 1 y 9.999." |
+| 9 | Datos válidos: Automóviles $5000 / 2 celdas, Motocicletas $2000 / 1 celda → "Guardar" | "Parqueadero registrado exitosamente"; el panel muestra "Activo", "Automóviles: 2 disponibles / 2" y "Motocicletas: 1 disponibles / 1" |
+| 10 | Abrir `/admin/parqueadero/registrar` | Redirige a `/admin` |
+| 11 | (Si el back aún no concede permisos) "Guardar" | "No tienes permisos para realizar esta acción…" |
 
 ### US2: Panel (HU4)
 
 | # | Paso | Esperado |
 |---|------|----------|
-| 1 | Revisar el panel de `admin1` | Datos en modo lectura, tarifas "$ 5.000" y "$ 2.000", y accesos a Editar, Gestionar ocupación y Configurar celdas |
-| 2 | Login con `admin2` (sin parqueadero) | Ve solo "Registrar parqueadero"; nada de `admin1` |
+| 1 | Panel de `admin1` | Datos en modo lectura, "$ 5.000" y "$ 2.000", y los accesos |
+| 2 | Login con `admin2` | Solo "Registrar parqueadero"; nada de `admin1` |
 
 ### US3: Ocupación (HU7) con `admin1`
 
 | # | Paso | Esperado |
 |---|------|----------|
-| 1 | "Gestionar ocupación" | Automóviles: capacidad 2, ocupadas 0, disponibles 2; Motocicletas: capacidad 0 |
-| 2 | Ingreso de Automóvil × 2 | Ocupadas 2, disponibles 0; el botón se deshabilita y aparece "No hay celdas disponibles de este tipo" |
-| 3 | Seleccionar Motocicleta en "Registrar salida" | Deshabilitado, con "No hay celdas ocupadas de este tipo para liberar" |
+| 1 | "Gestionar ocupación" | Automóviles 2/0/2 y Motocicletas 1/0/1 (capacidad/ocupadas/disponibles) |
+| 2 | Ingreso de Automóvil × 2 | Ocupadas 2, disponibles 0; botón deshabilitado + "No hay celdas disponibles de este tipo" |
+| 3 | Salida de Motocicleta | Deshabilitada + "No hay celdas ocupadas de este tipo para liberar" |
 | 4 | Salida de Automóvil × 1 | Ocupadas 1, disponibles 1 |
-| 5 | "Volver al panel" | "Automóviles: 1 disponibles / 2" |
+| 5 | Dos pestañas con 1 disponible: ingreso en ambas | Una funciona; la otra muestra "No hay celdas disponibles de este tipo" y recarga los conteos |
 
 ### US4: Editar (HU5) con `admin1`
 
 | # | Paso | Esperado |
 |---|------|----------|
-| 1 | "Editar información" | Formulario precargado más "Estado del parqueadero" |
-| 2 | Desmarcar Automóviles (capacidad 2) | Advertencia "Debe reducir a cero las celdas de este tipo de vehículo antes de quitarlo de los tipos atendidos" y sigue marcado |
+| 1 | "Editar información" | Formulario precargado + "Estado del parqueadero" |
+| 2 | Desmarcar Automóviles (capacidad 2) | Advertencia "Debe reducir a cero las celdas…" y sigue marcado |
 | 3 | Capacidad de Automóviles `0` → "Guardar cambios" (con 1 ocupada) | "No puede reducir la cantidad de celdas por debajo de las celdas actualmente ocupadas"; no se guarda nada |
-| 4 | Desmarcar Motocicletas (capacidad 0), cambiar el horario y el estado a Inactivo → "Guardar cambios" | "Información actualizada exitosamente"; el panel muestra "Inactivo" y el aviso de inactivo; ya no aparece Motocicletas |
-| 5 | Editar → cambiar el nombre → "Cancelar" | El nombre no cambia |
-| 6 | Volver a Activo | Aviso desaparece |
+| 4 | Capacidad de Motocicletas `0` → "Guardar cambios" | "Información actualizada exitosamente" |
+| 5 | Editar → desmarcar Motocicletas (ahora en 0), cambiar el horario y el estado a Inactivo → guardar | Éxito; el panel muestra "Inactivo" y su aviso; no aparece Motocicletas |
+| 6 | Editar → cambiar el nombre → "Cancelar" | Sin cambios |
+| 7 | Volver a Activo | El aviso desaparece |
 
 ### US5: Configurar celdas (HU6) con `admin1`
 
 | # | Paso | Esperado |
 |---|------|----------|
-| 1 | "Configurar celdas" | Solo la tarjeta de Automóviles, el valor 2 y "Ocupadas actualmente: 1" |
+| 1 | "Configurar celdas" | Solo Automóviles, valor 2, "Ocupadas actualmente: 1" |
 | 2 | "−" hasta 0 → "Guardar cambios" | "No puede reducir la cantidad de celdas por debajo de las celdas actualmente ocupadas" |
-| 3 | Fijar 20 → "Guardar cambios" | "Celdas actualizadas exitosamente"; el panel muestra "Automóviles: 19 disponibles / 20" |
+| 3 | Fijar 20 → guardar | "Celdas actualizadas exitosamente"; el panel muestra "Automóviles: 19 disponibles / 20" |
 
-### Aislamiento (FR-003, SC-004)
+### Aislamiento (lo garantiza el back; solo se comprueba)
 
-Con `admin2` autenticado (aal2), en la consola de desarrollo:
+Con `admin2` (aal2), en la consola del navegador (`window.__supabase` solo existe en DEV):
 
 ```js
-await window.__supabase.from('parqueaderos').select('*')                     // → [] (no ve el de admin1)
-await window.__supabase.from('parqueaderos').update({ nombre: 'X' }).neq('id', '') // → error de permisos
-await window.__supabase.rpc('registrar_ingreso', { p_tipo: 'automovil' })        // → PARQUEADERO_NO_EXISTE
+await window.__supabase.from('parking_lots').select('*')   // → [] (no ve el de admin1)
 ```
 
-Con `admin1` en aal1 (después de la contraseña y antes del código): `select` → `[]`, y cualquier RPC devuelve
-`NO_AUTENTICADO_AAL2`.
-
-> La visibilidad en el mapa público (US1-11, US4-8, SC-006) se valida en la feature 003.
+> La visibilidad en el mapa público (US1-11, US4-8 y SC-006) se valida en la feature 003.

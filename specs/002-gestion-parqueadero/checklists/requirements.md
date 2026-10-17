@@ -37,3 +37,6 @@
   Valle de Aburrá) son supuestos razonables documentados en FR-006, FR-009 y *Assumptions*.
 - Las erratas de HU6 y HU7 se resolvieron y se documentaron en *Desviaciones e interpretaciones*.
 - Iteración 1: se ajustó el escenario US4-6 (desmarcar el único tipo) para que sea verificable.
+- Revisión 2026-10-17 (integración con el repo y el back existentes): se ajustaron la capacidad mínima (1 al
+  crear un tipo), la edición no atómica (validación previa + guardado secuencial), los casos de registro
+  incompleto, guardado parcial y permisos del back. El back no se modifica.

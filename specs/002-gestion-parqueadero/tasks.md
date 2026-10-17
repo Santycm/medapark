@@ -1,14 +1,16 @@
 ---
-description: "Task list for 002-gestion-parqueadero"
+description: "Task list for 002-gestion-parqueadero (solo front, back existente sin cambios)"
 ---
 
 # Tasks: Gestión del Parqueadero por el Administrador
 
 **Input**: Design documents from `specs/002-gestion-parqueadero/`
 
-**Prerequisites**: feature 001 implementada; plan.md, spec.md, research.md, data-model.md, contracts/ (db-schema, parqueadero-api, ui), quickstart.md
+**Prerequisites**: feature 001 implementada; plan.md, spec.md, research.md, data-model.md, contracts/ (back-usage, frontend-api, ui), quickstart.md; `docs/supabase-esquema-actual.md`
 
-**Tests**: OBLIGATORIAS (constitución, Principio IV): pgTAP para el esquema, la RLS y las RPC; Vitest para el dominio, los esquemas, los mapeos, los errores y los componentes con lógica condicional.
+**Tests**: OBLIGATORIAS (Principio IV): Vitest con `supabase` simulado. Nada contra el Supabase remoto.
+
+**⚠️ Reglas**: **no** crear SQL, migraciones ni cambios en Supabase; respetar las políticas del back (capacidad ≥ 1 al crear un tipo; borrar un tipo solo con capacidad y ocupadas en 0); no hacer push a `main`.
 
 **Organization**: US1 = HU3 Registrar (P1), US2 = HU4 Panel (P1), US3 = HU7 Ocupación (P2), US4 = HU5 Editar (P2), US5 = HU6 Celdas (P3).
 
@@ -18,187 +20,106 @@ description: "Task list for 002-gestion-parqueadero"
 
 ## Phase 1: Setup
 
-- [ ] T001 Instalar dependencias: `leaflet@1.9 react-leaflet@4.2` y, como dev, `@types/leaflet otpauth`, en `package.json`; importar `leaflet/dist/leaflet.css` en `src/main.tsx`
-- [ ] T002 [P] **Mocks (Pencil MCP, en otra sesión)**: agregar en `design/medapark.pen` las pantallas *Panel sin parqueadero*, *Panel con parqueadero* (base `docs/prototipos/HU04-consultar-mi-parqueadero.jpg`, con los avisos de publicabilidad y el menú lateral "Mi parqueadero / Gestionar ocupación / Configurar celdas"), *Registrar parqueadero* (base `HU03-registrar-parqueadero.jpg`, **sin** buscador sobre el mapa y con los campos de tarifa y capacidad **por tipo**), *Editar parqueadero* (base `HU05-editar-parqueadero.jpg`, con el correo **opcional**), *Configurar celdas* (base `HU06-configurar-celdas.jpg`, con "Ocupadas actualmente") y *Gestionar ocupación* (base `HU07-gestionar-ocupacion.jpg`, con los estados de botón deshabilitado y sus mensajes). Requisito previo de T025, T032, T037, T044 y T050
+- [ ] T001 Crear la rama `feature/002-gestion-parqueadero` desde `develop` (con la 001 ya integrada) y fijar `.specify/feature.json` en `specs/002-gestion-parqueadero`
+- [ ] T002 [P] **Mocks (Pencil MCP, en otra sesión)**: en `design/medapark.pen`, *Panel sin parqueadero*, *Panel con parqueadero* (base `docs/prototipos/HU04-consultar-mi-parqueadero.jpg`, con los avisos de publicabilidad/sin tipos y el menú "Mi parqueadero / Gestionar ocupación / Configurar celdas"), *Registrar parqueadero* (base `HU03-*.jpg`, **sin** buscador sobre el mapa, con tarifa y capacidad **por tipo**), *Editar* (base `HU05-*.jpg`, con el correo opcional), *Configurar celdas* (base `HU06-*.jpg`, con "Ocupadas actualmente") y *Gestionar ocupación* (base `HU07-*.jpg`, con los botones deshabilitados y sus mensajes). Requisito previo de T024, T028, T031, T036 y T039
 
 ---
 
-## Phase 2: Foundational (bloquea todas las stories)
+## Phase 2: Foundational (bloquea las stories)
 
-**Purpose**: esquema, RLS, RPC y pruebas SQL; tipos; dominio; servicio; provider y guards; componentes compartidos.
+- [ ] T003 [P] Crear `src/lib/format.ts` + `format.test.ts` (`formatCOP(5000)` → `"$ 5.000"`, `1500000` → `"$ 1.500.000"`, `normalizeDecimal("6,2442")` → `"6.2442"`, `formatCoord(6.2442)` → `"6.2442"`)
+- [ ] T004 [P] Extender `src/lib/messages.ts` con `parqueadero`, `celdas` y `ocupacion` **exactamente** como en `contracts/frontend-api.md` §5
+- [ ] T005 [P] Crear `src/domain/parking.ts` (tipos de `contracts/back-usage.md` §1 y funciones de `contracts/frontend-api.md` §1, incluidos `validateEdit` y `diffConfigs`)
+- [ ] T006 [P] Pruebas `src/domain/parking.test.ts`: `availableSpaces`; `isPublishable`/`unpublishedReason` (todas las filas de la tabla de publicabilidad de `data-model.md`, con la prioridad inactivo > sin_tipos > sin_celdas); `isOutsideMedellin` (Parque Berrío → false, Bogotá → true, bordes → false); `canRemoveType`; `validateEdit` (sin tipos, quitar con capacidad > 0, capacidad < ocupadas, tipo nuevo con 0, caso válido); `diffConfigs` (actualizar, borrar, insertar y combinaciones); `sortConfigs`
+- [ ] T007 [P] Crear `src/services/parkingErrors.ts` + `parkingErrors.test.ts` (una fila por caso de `contracts/back-usage.md` §7, incluidos `23514` con y sin `parking_vehicle_configs_check` y los textos de las RPC)
+- [ ] T008 Crear `src/services/adminParking.ts` según `contracts/back-usage.md` §2–§6 y §8 (escrituras con `.select('id')`; validación previa y orden de escritura en `updateParkingLot`; registro en 2 pasos con `registroIncompleto`; ante `SESION` llama a `handleSessionError` de la 001)
+- [ ] T009 [P] Pruebas `src/services/adminParking.test.ts` (mock de `supabase`): `registerParkingLot` envía `admin_id` y `contact_email: null` si está vacío; si el paso 2 falla → `registroIncompleto`; `23505` → `yaExiste`; `updateParkingLot` relee, valida y **no escribe** si `validateEdit` falla; respeta el orden update → delete → insert → update del parqueadero; `delete` con `[]` → `quitarTipo`; un fallo posterior al primer paso → `guardadoParcial`; `42501` → `permisoDenegado`; `registerEntry` devuelve el número de ocupadas y mapea `sin capacidad disponible`
+- [ ] T010 Crear `src/context/MyParkingProvider.tsx` + `src/hooks/useMyParking.ts` (`contracts/frontend-api.md` §3) y montarlo en `src/components/layout/AdminLayout.tsx` envolviendo el `<Outlet/>`
+- [ ] T011 Crear `src/router/guards/RequireParking.tsx` y `RequireNoParking.tsx` + `guards.test.tsx` (cargando, error con "Reintentar", sin y con parqueadero)
+- [ ] T012 Actualizar `src/components/layout/AdminSidebar.tsx` con los ítems de `contracts/ui.md` §Menú lateral (condicionados por `useMyParking`)
+- [ ] T013 [P] Crear `src/components/common/Checkbox.tsx`, `RadioCard.tsx`, `NumberStepper.tsx` (+ `NumberStepper.test.tsx`: mínimo, máximo, solo dígitos y botones deshabilitados en los límites), `Badge.tsx` y `Breadcrumbs.tsx`
+- [ ] T014 [P] Crear `src/components/map/markerIcons.ts` y `src/components/map/MapBase.tsx` (`research.md` §R8). No modificar `ParkingMap.tsx` ni `ParkingMarker.tsx` (los rediseña la 003)
+- [ ] T015 Registrar en `src/router/index.tsx` las rutas de `contracts/ui.md` con sus guards, usando componentes temporales para las páginas que aún no existen
 
-### Base de datos
-
-- [ ] T003 Crear `supabase/migrations/20261017000200_parqueaderos.sql` con **todo** el SQL de `contracts/db-schema.md` §1, §2 y §3 (enums, `set_updated_at`, tablas, triggers, RLS, `revoke`/`grant`, `_validar_ofertas` y las 5 RPC con el algoritmo de §3.2 y §3.3 completo, más los permisos de §3.5)
-- [ ] T004 [P] Crear `supabase/tests/002_schema.test.sql` según `contracts/db-schema.md` §4 (fixture común + casos de esquema y `CHECK`)
-- [ ] T005 [P] Crear `supabase/tests/002_rls.test.sql` (§4: dueño y no dueño, aal1 y aal2, anon, escrituras directas denegadas)
-- [ ] T006 [P] Crear `supabase/tests/002_rpc_registrar.test.sql` (§4)
-- [ ] T007 [P] Crear `supabase/tests/002_rpc_actualizar.test.sql` (§4, incluida la atomicidad: un error no cambia el `nombre`)
-- [ ] T008 [P] Crear `supabase/tests/002_rpc_celdas.test.sql` (§4)
-- [ ] T009 [P] Crear `supabase/tests/002_rpc_ocupacion.test.sql` (§4)
-- [ ] T010 Aplicar y probar: `npx supabase db push` y `npx supabase test db --linked` en verde; luego `npx supabase gen types typescript --linked > src/lib/database.types.ts`
-
-### Núcleo del frontend
-
-- [ ] T011 [P] Crear `src/lib/result.ts` (`export type Result<T, C extends string = string> = { ok: true; data: T } | { ok: false; code: C; message: string }`) y refactorizar `src/features/auth/authService.ts` para importarlo (sin cambios de comportamiento; las pruebas de la 001 siguen en verde)
-- [ ] T012 [P] Crear `src/lib/format.ts` (`formatCOP`, `formatCoord`, `normalizeDecimal`) y `src/lib/format.test.ts` (`5000` → `"$ 5.000"`, `1500000` → `"$ 1.500.000"`, `"6,2442"` → `"6.2442"`, `6.244200` → `"6.2442"`)
-- [ ] T013 [P] Extender `src/lib/messages.ts` con las secciones `parqueadero`, `celdas` y `ocupacion` **exactamente** como en `contracts/parqueadero-api.md` §Extensión de MSG
-- [ ] T014 [P] Crear `src/features/parqueadero/types.ts` según `data-model.md` §Tipos en el frontend
-- [ ] T015 [P] Crear `src/features/parqueadero/domain.ts` con las funciones de `contracts/parqueadero-api.md`
-- [ ] T016 [P] Pruebas `src/features/parqueadero/domain.test.ts`: `celdasDisponibles`; `esPublicable` y `motivoNoPublicable` (las 3 filas de la tabla de publicabilidad de `data-model.md`; con inactivo y sin celdas a la vez → `'inactivo'`); `estaFueraDeMedellin` (Parque Berrío → `false`, Bogotá → `true`, bordes 6.0/6.5/−75.75/−75.3 → `false`); `puedeQuitarTipo`; `capacidadValida`; `ordenarOfertas`
-- [ ] T017 [P] Crear `src/features/parqueadero/rpcErrors.ts` y `rpcErrors.test.ts` (una fila por cada entrada de la tabla de `research.md` §R4)
-- [ ] T018 Crear `src/features/parqueadero/parqueaderoService.ts` según `contracts/parqueadero-api.md` (mapea `ParqueaderoInput` a los parámetros `p_*` de las RPC; ante `NO_AUTENTICADO_AAL2` o un error de sesión llama a `handleSessionError` de la 001)
-- [ ] T019 [P] Pruebas `src/features/parqueadero/parqueaderoService.test.ts` (mock de `supabase`): `registrarParqueadero` envía `p_correo_contacto: null` si el correo está vacío y `p_ofertas` con 1 o 2 elementos; `obtenerMiParqueadero` devuelve `null` sin error si no hay fila; un `SIN_CELDAS_DISPONIBLES` llega con el mensaje literal; `NO_AUTENTICADO_AAL2` invoca `handleSessionError`
-- [ ] T020 Crear `src/features/parqueadero/MiParqueaderoProvider.tsx` (`useMiParqueadero`, `recargar` y `actualizarOferta`) y montarlo dentro de `src/components/layout/AdminLayout.tsx`, envolviendo el `<Outlet/>`
-- [ ] T021 Crear `src/features/parqueadero/guards/RequireParqueadero.tsx` y `RequireSinParqueadero.tsx` según `contracts/ui.md`, y sus pruebas en `guards.test.tsx` (cargando, error con "Reintentar", sin parqueadero y con parqueadero)
-- [ ] T022 Actualizar `src/components/layout/AdminSidebar.tsx` con los 3 ítems de `contracts/ui.md` §Menú lateral (visibles según `useMiParqueadero`)
-- [ ] T023 [P] Crear los componentes UI compartidos en `src/components/ui/`: `Checkbox.tsx`, `RadioCard.tsx` (título, descripción, ícono y estado seleccionado con borde `brand-600` y fondo `brand-50`), `NumberStepper.tsx` (− input +, `min`, `max`, solo dígitos, `aria-label`, botones deshabilitados en los límites; pruebas `NumberStepper.test.tsx`), `Badge.tsx` (activo o inactivo) y `Breadcrumbs.tsx`
-- [ ] T024 [P] Crear `src/components/map/markerIcons.ts` (`L.divIcon` con SVG inline: pin `brand-600` con carro blanco; variante `seleccionado` en `accent-600`) y `src/components/map/MapBase.tsx` (`MapContainer` + `TileLayer` CARTO Voyager con atribución, props `center`, `zoom`, `className`, `scrollWheelZoom`, `children`), según `research.md` §R8
-- [ ] T025 Registrar en `src/app/router.tsx` las rutas de `contracts/ui.md` con sus guards; las páginas que aún no existen se apuntan a componentes temporales que se reemplazan en cada story. `/admin` pasa a usar `src/features/parqueadero/pages/PanelPage.tsx` (borrar `src/pages/admin/PanelPage.tsx`)
-
-**Checkpoint**: `npm test` y `npm run db:test` en verde; el menú y los guards responden al estado del parqueadero.
+**Checkpoint**: `npm test` en verde; el menú y los guards responden al estado del parqueadero.
 
 ---
 
 ## Phase 3: User Story 1 - Registrar mi parqueadero (P1) 🎯 MVP · HU3
 
-**Goal**: el admin sin parqueadero lo registra con validaciones, mapa selector y ofertas por tipo.
-
 **Independent Test**: `quickstart.md` §US1.
 
-### Tests for User Story 1
-
-- [ ] T026 [P] [US1] Pruebas `src/features/parqueadero/schemas.test.ts` (`parqueaderoFormSchema`): todo vacío → errores en los campos requeridos; ningún tipo marcado → error en el grupo; tipo marcado sin tarifa ni capacidad → errores; tipo desmarcado con campos vacíos → válido; teléfono `300-123` → "Solo se permiten caracteres numéricos."; `123456` → "Debe tener entre 7 y 10 dígitos."; correo vacío válido; `contacto@dominio` inválido; latitud `"6,2442"` válida (normalizada); `95` y `-181` → mensajes de rango; tarifa `0` y `1000000` → `tarifaRango`; capacidad `-1` y `2.5` → `enteroNoNegativo`; capacidad `0` válida; un nombre de solo espacios cuenta como vacío
-- [ ] T027 [P] [US1] Pruebas `src/features/parqueadero/formMapping.test.ts`: `toParqueaderoInput` arma 1 o 2 ofertas según los checks, convierte a número, recorta espacios y devuelve el correo vacío como `null`; `toFormValues` es inversa sobre un parqueadero de ejemplo
-- [ ] T028 [P] [US1] Pruebas `src/features/parqueadero/components/ParqueaderoForm.test.tsx` (mock de `LocationPicker`): marcar y desmarcar un tipo muestra y oculta sus campos; enviar vacío muestra "Debe completar los campos obligatorios" sin llamar a `onSubmit`; el aviso `fueraDeMedellin` aparece con coordenadas de Bogotá y **no** bloquea el envío; en modo `registrar` no hay campo Estado; el botón dice "Guardar"
-
-### Implementation for User Story 1
-
-- [ ] T029 [P] [US1] Crear `src/features/parqueadero/schemas.ts` con `parqueaderoFormSchema` (según `data-model.md` §Esquema del formulario) y `src/features/parqueadero/formMapping.ts` (según `contracts/parqueadero-api.md`)
-- [ ] T030 [US1] Crear `src/components/map/LocationPicker.tsx` según `research.md` §R8 y `plan.md` (Design Notes 4): props `lat?: number`, `lng?: number` y `onChange(lat, lng)`; marcador arrastrable; clic para fijar; redondeo a 6 decimales; centro en Medellín si no hay coordenadas válidas; `aria-label="Mapa para seleccionar la ubicación del parqueadero"`
-- [ ] T031 [US1] Crear `src/features/parqueadero/components/ParqueaderoForm.tsx` (props `mode`, `defaultValues`, `ofertasGuardadas?`, `onSubmit(values)`, `onCancel`, `submitting`, `serverError?`) con el layout y los textos de `contracts/ui.md` §RegistrarParqueaderoPage/EditarParqueaderoPage (en esta story sin el campo Estado ni la regla de desmarcar)
-- [ ] T032 [US1] Crear `src/features/parqueadero/pages/RegistrarParqueaderoPage.tsx`: encabezado y `ParqueaderoForm mode="registrar"`; al enviar: `registrarParqueadero(toParqueaderoInput(v))`; éxito → `await recargar()` y `navigate('/admin', { replace: true, state: { flash: MSG.parqueadero.registrado } })`; `PARQUEADERO_YA_EXISTE` → `recargar()` y navegar a `/admin`; otros errores → `serverError`. "Cancelar" → `/admin`
-
-**Checkpoint**: un admin nuevo registra su parqueadero (el panel puede ser todavía básico).
+- [ ] T016 [P] [US1] Pruebas `src/domain/schemas/parking.test.ts` (`makeParkingFormSchema` en modo `registrar`): vacío → errores en los requeridos; ningún tipo → error de grupo; tipo marcado sin tarifa ni capacidad → errores; tipo desmarcado con campos vacíos → válido; teléfono `300-123` y `123456` → mensajes; correo vacío válido; `contacto@dominio` inválido; `"6,2442"` válido; `95`/`-181` → rango; tarifa `0`/`1000000` → `tarifaRango`; capacidad `0` → `capacidadNueva`; `2.5` → error; nombre de solo espacios = vacío
+- [ ] T017 [P] [US1] Pruebas `src/domain/parkingForm.test.ts` (`toParkingInput` arma 1 o 2 configs, convierte a número, recorta y devuelve `null` si el correo está vacío; `toFormValues` es inversa; `status` boolean ↔ `'activo' | 'inactivo'`)
+- [ ] T018 [P] [US1] Pruebas `src/components/parking/ParkingForm.test.tsx` (mock de `LocationPicker`): mostrar y ocultar los campos por tipo; enviar vacío → resumen sin `onSubmit`; aviso fuera de Medellín que no bloquea; en modo `registrar` no hay Estado y el botón dice "Guardar"
+- [ ] T019 [P] [US1] Crear `src/domain/schemas/parking.ts` y `src/domain/parkingForm.ts` (`contracts/frontend-api.md` §2; reglas de `data-model.md` §Esquema)
+- [ ] T020 [US1] Crear `src/components/map/LocationPicker.tsx` (`research.md` §R8; `aria-label="Mapa para seleccionar la ubicación del parqueadero"`)
+- [ ] T021 [US1] Crear `src/components/parking/ParkingForm.tsx` (props `mode`, `defaultValues`, `savedConfigs?`, `onSubmit`, `onCancel`, `submitting`, `serverError?`) con el layout y los textos de `contracts/ui.md` (sin Estado ni la regla de desmarcar en esta story)
+- [ ] T022 [US1] Crear `src/pages/app/RegisterParking.tsx`: `registerParkingLot(user.id, toParkingInput(v))`; éxito → `await reload()` y `/admin` con `flash = registrado`; `registroIncompleto`/`yaExiste` → `reload()` y `/admin` con ese mensaje; otros errores → `serverError`; "Cancelar" → `/admin`
 
 ---
 
-## Phase 4: User Story 2 - Consultar mi parqueadero / panel (P1) · HU4
-
-**Goal**: panel en modo lectura con disponibilidad, avisos y accesos.
+## Phase 4: User Story 2 - Panel de mi parqueadero (P1) · HU4
 
 **Independent Test**: `quickstart.md` §US2.
 
-### Tests for User Story 2
+- [ ] T023 [P] [US2] Pruebas `src/pages/app/Panel.test.tsx` (provider simulado): sin parqueadero → solo "Registrar parqueadero"; con parqueadero → datos, "No registrado" si no hay correo, "$ 5.000" y "Automóviles: 15 disponibles / 20"; solo motos → sin "Automóviles"; inactivo → `avisoInactivo`; capacidad 0 → `avisoSinCeldas` y "Gestionar ocupación" deshabilitado; sin tipos → `avisoSinTipos`; `flash` visible
+- [ ] T024 [P] [US2] Crear `src/components/parking/AvailabilityCards.tsx` (prop `showOccupied`; texto `sr-only` "Automóviles: 15 disponibles / 20"), `PublishNotice.tsx` y `ParkingSummary.tsx`
+- [ ] T025 [US2] Reemplazar `src/pages/app/Panel.tsx` según `contracts/ui.md` §Panel (estado vacío, encabezado con badge, flash con autocierre a los 5 s y limpieza del state, aviso, tarjeta de información, disponibilidad y accesos)
 
-- [ ] T033 [P] [US2] Pruebas `src/features/parqueadero/pages/PanelPage.test.tsx` (`MiParqueaderoProvider` simulado): sin parqueadero → botón "Registrar parqueadero" y ausencia de "Gestionar ocupación", "Editar información" y "Configurar celdas"; con parqueadero → nombre, dirección, coordenadas, "No registrado" si no hay correo, "$ 5.000", y el texto "Automóviles: 15 disponibles / 20"; solo motos → no hay "Automóviles"; inactivo → `avisoInactivo`; capacidad 0 → `avisoSinCeldas` y "Gestionar ocupación" deshabilitado con `sinCapacidad`; `location.state.flash` → alerta de éxito
-
-### Implementation for User Story 2
-
-- [ ] T034 [P] [US2] Crear `src/features/parqueadero/components/DisponibilidadCards.tsx` (por oferta: ícono, nombre plural, "Celdas disponibles", "Capacidad total", con un texto `sr-only` del tipo "Automóviles: 15 disponibles / 20"; prop `mostrarOcupadas` para reutilizarlo en HU7)
-- [ ] T035 [P] [US2] Crear `src/features/parqueadero/components/AvisoPublicacion.tsx` (usa `motivoNoPublicable`) y `src/features/parqueadero/components/ParqueaderoResumen.tsx` (nombre, dirección, coordenadas y badge)
-- [ ] T036 [US2] Crear `src/features/parqueadero/pages/PanelPage.tsx` según `contracts/ui.md` §PanelPage (estado vacío, encabezado, flash con autocierre a los 5 s y limpieza del state, aviso, tarjeta de información, disponibilidad y tarjetas de acceso)
-
-**Checkpoint**: US1 + US2 forman el MVP de la feature (registro y consulta).
+**Checkpoint**: US1 + US2 = MVP de la feature.
 
 ---
 
 ## Phase 5: User Story 3 - Gestionar ocupación (P2) · HU7
 
-**Goal**: ingresos y salidas atómicos con conteos inmediatos.
-
 **Independent Test**: `quickstart.md` §US3.
 
-### Tests for User Story 3
-
-- [ ] T037 [P] [US3] Pruebas `src/features/parqueadero/pages/GestionarOcupacionPage.test.tsx` (mock del servicio y del provider): muestra capacidad, ocupadas y disponibles por tipo; con 0 disponibles del tipo seleccionado, "Registrar ingreso" queda deshabilitado con "No hay celdas disponibles de este tipo"; con 0 ocupadas, "Registrar salida" queda deshabilitado con "No hay celdas ocupadas de este tipo para liberar"; con un solo tipo atendido no se muestra el otro; un ingreso exitoso llama a `actualizarOferta` y muestra "Ingreso registrado"; el error `SIN_CELDAS_DISPONIBLES` muestra el mensaje y llama a `recargar`; durante la petición el botón está deshabilitado; con capacidad total 0 se muestra `sinCapacidad` con el enlace a "Configurar celdas"
-- [ ] T038 [P] [US3] (Opcional) Crear `tests/integration/ocupacion-concurrente.test.ts` según `research.md` §R11 (con `describe.skipIf` si no hay variables `E2E_*`): login, MFA con `otpauth`, `configurar_celdas` a capacidad N, N+20 llamadas concurrentes a `registrar_ingreso` → exactamente N exitosas y ocupadas = N; luego N+20 salidas → 0
-
-### Implementation for User Story 3
-
-- [ ] T039 [US3] Crear `src/features/parqueadero/pages/GestionarOcupacionPage.tsx` según `contracts/ui.md` §GestionarOcupacionPage (`ParqueaderoResumen`, `DisponibilidadCards mostrarOcupadas` en una región `aria-live`, tarjetas de ingreso y salida con `RadioCard` por tipo, estados deshabilitados con sus mensajes, retroalimentación efímera, `Alert` info y "Volver al panel")
-
-**Checkpoint**: las disponibilidades cambian y se ven en el panel.
+- [ ] T026 [P] [US3] Pruebas `src/pages/app/ManageOccupancy.test.tsx`: conteos por tipo; botones deshabilitados con sus mensajes; un solo tipo → no se muestra el otro; éxito → `applyOccupancy` y "Ingreso registrado"; `SIN_DISPONIBLES` → mensaje + `reload`; botón deshabilitado durante la petición; capacidad total 0 → `sinCapacidad` + enlace a celdas
+- [ ] T027 [US3] Crear `src/pages/app/ManageOccupancy.tsx` según `contracts/ui.md` §ManageOccupancy, usando `registerEntry`/`registerExit` con el `id` de la configuración del tipo seleccionado
 
 ---
 
 ## Phase 6: User Story 4 - Editar mi parqueadero (P2) · HU5
 
-**Goal**: edición atómica, incluido el estado y la regla de quitar tipos.
-
 **Independent Test**: `quickstart.md` §US4.
 
-### Tests for User Story 4
-
-- [ ] T040 [P] [US4] Ampliar `src/features/parqueadero/components/ParqueaderoForm.test.tsx` para el modo `editar`: precarga de valores; campo Estado con las 2 opciones y sus descripciones; desmarcar un tipo con `ofertasGuardadas` de capacidad > 0 → se mantiene marcado y aparece `MSG.parqueadero.quitarTipo`; con capacidad 0 → se desmarca; botón "Guardar cambios"; un `serverError` de `CAPACIDAD_MENOR_A_OCUPADAS` se muestra en el campo de capacidad del tipo correspondiente
-- [ ] T041 [P] [US4] Pruebas `src/features/parqueadero/pages/EditarParqueaderoPage.test.tsx`: un éxito navega a `/admin` con `flash = MSG.parqueadero.actualizado` tras `recargar`; "Cancelar" navega sin llamar al servicio; un error de negocio se muestra y no navega
-
-### Implementation for User Story 4
-
-- [ ] T042 [US4] Completar `ParqueaderoForm.tsx` para `mode="editar"`: el campo "Estado del parqueadero" con `RadioCard` (textos de `contracts/ui.md`), la regla de desmarcar con `puedeQuitarTipo` (`plan.md` Design Notes 2), el botón "Guardar cambios" y el mapeo de `serverError` a campos (`TIPO_CON_CELDAS` → grupo de tipos; `CAPACIDAD_MENOR_A_OCUPADAS` → capacidad del tipo cuyo valor nuevo sea menor a sus ocupadas)
-- [ ] T043 [US4] Crear `src/features/parqueadero/pages/EditarParqueaderoPage.tsx`: `defaultValues = toFormValues(parqueadero)`, `ofertasGuardadas = parqueadero.ofertas_vehiculo`; enviar → `actualizarParqueadero({ ...toParqueaderoInput(v), estado: v.estado })` → éxito: `await recargar()` y navegar con el flash; "Cancelar" → `/admin`
-
-**Checkpoint**: la edición, el cambio de estado y las reglas de capacidad funcionan.
+- [ ] T028 [P] [US4] Ampliar `ParkingForm.test.tsx` (modo `editar`): precarga; Estado con 2 opciones y descripciones; desmarcar un tipo con capacidad guardada > 0 → sigue marcado + `quitarTipo`; con 0 → se desmarca; capacidad 0 permitida en un tipo guardado, pero no en uno nuevo; "Guardar cambios"; `serverError` de capacidad se ubica en el campo del tipo
+- [ ] T029 [P] [US4] Pruebas `src/pages/app/EditParking.test.tsx` (éxito → `reload` + flash `actualizado`; "Cancelar" no llama al servicio; error de validación previa → mensaje sin navegar; `guardadoParcial` → mensaje y `reset` con los datos recargados)
+- [ ] T030 [US4] Completar `ParkingForm.tsx` para `mode="editar"` (Estado con `RadioCard`, `canRemoveType` en el checkbox, `savedTypes` para el esquema y mapeo de `serverError` a campos)
+- [ ] T031 [US4] Crear `src/pages/app/EditParking.tsx` (`defaultValues = toFormValues(parking)`, `updateParkingLot({ ...toParkingInput(v), status: v.status === 'activo' })`)
 
 ---
 
 ## Phase 7: User Story 5 - Configurar celdas (P3) · HU6
 
-**Goal**: pantalla dedicada con +/−, total y validación frente a las ocupadas.
-
 **Independent Test**: `quickstart.md` §US5.
 
-### Tests for User Story 5
-
-- [ ] T044 [P] [US5] Pruebas `src/features/parqueadero/pages/ConfigurarCeldasPage.test.tsx`: solo los tipos atendidos; el total se recalcula al cambiar los valores; un valor menor a las ocupadas muestra `MSG.celdas.reducir` **antes** de enviar (validación de cliente con `capacidadValida`) y no llama al servicio; el error del servidor `CAPACIDAD_MENOR_A_OCUPADAS` también se muestra; un éxito navega con `flash = MSG.celdas.actualizadas`; "Cancelar" navega sin guardar
-
-### Implementation for User Story 5
-
-- [ ] T045 [US5] Crear `src/features/parqueadero/pages/ConfigurarCeldasPage.tsx` según `contracts/ui.md` §ConfigurarCeldasPage (`ParqueaderoResumen`, `NumberStepper` por tipo con "Ocupadas actualmente: n", total, validación local con `capacidadValida`, `configurarCeldas([...])`, `recargar()` y navegación con el flash)
-
-**Checkpoint**: las 5 stories funcionan de forma independiente.
+- [ ] T032 [P] [US5] Pruebas `src/pages/app/ConfigureSpaces.test.tsx`: solo los tipos atendidos; total recalculado; un valor menor a las ocupadas → `reducir` antes de enviar, sin llamar al servicio; `CAPACIDAD_MENOR_A_OCUPADAS` del servidor → mensaje + `reload`; éxito → flash `actualizadas`; "Cancelar" sin guardar
+- [ ] T033 [US5] Crear `src/pages/app/ConfigureSpaces.tsx` según `contracts/ui.md` §ConfigureSpaces (`NumberStepper` 0–9999, "Ocupadas actualmente", total; `configureSpaces` solo con los tipos cuyo valor cambió)
 
 ---
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T046 [P] Revisión responsive (360, 768 y 1280 px) del panel, el formulario (mapa y 2 columnas → 1), celdas y ocupación
-- [ ] T047 [P] Revisión de accesibilidad: labels de los checkboxes y radios, `aria-describedby` en los errores, `aria-live` en los conteos, foco al primer campo con error tras enviar (`setFocus`), y el mapa con alternativa por teclado (los campos de latitud y longitud)
-- [ ] T048 [P] Verificar que ningún componente envíe `parqueadero_id` a las RPC ni use `.insert/.update/.delete` sobre las tablas (`rg "from\('parqueaderos'\)\.(insert|update|delete)|from\('ofertas_vehiculo'\)" src` sin resultados)
-- [ ] T049 Ejecutar `npm run lint`, `npm run typecheck`, `npm test` y `npm run db:test` en verde
-- [ ] T050 Validación manual completa de `specs/002-gestion-parqueadero/quickstart.md`, con los resultados en `specs/002-gestion-parqueadero/checklists/validacion-manual.md`
-- [ ] T051 Actualizar `CLAUDE.md` (bloque SPECKIT) y `README.md` si cambió algún comando
+- [ ] T034 [P] Revisión responsive (360, 768 y 1280 px) y de accesibilidad (labels, `aria-describedby`, `aria-live`, foco al primer error, latitud y longitud como alternativa al mapa)
+- [ ] T035 [P] Verificar que el repo **no** contiene SQL ni carpeta `supabase/migrations` (`git ls-files "*.sql"` vacío) y que ninguna escritura omite `.select('id')`
+- [ ] T036 `npm run lint`, `npm run typecheck`, `npm test` y `npm run build` en verde
+- [ ] T037 Validación manual de `quickstart.md` (incluido el caso de permisos del back) con los resultados en `specs/002-gestion-parqueadero/checklists/validacion-manual.md`
+- [ ] T038 Actualizar `CLAUDE.md` y `README.md` si cambió algún comando
+- [ ] T039 PR `feature/002-gestion-parqueadero` → `develop`
 
 ---
 
 ## Dependencies & Execution Order
 
-- **Setup (1)** → **Foundational (2)** → stories.
-- T003 → T004…T009 (en paralelo) → T010 (requiere el proyecto enlazado) → T014/T018 (usan `database.types.ts`).
-- T002 (mocks) antes de las tareas de páginas (T032, T036, T039, T043, T045).
-- **US1** y **US2** son independientes entre sí tras la Foundational (US1 navega a `/admin`; si US2 no está, se ve el placeholder del Provider). Se recomienda US1 → US2.
-- **US3**, **US4** y **US5** necesitan un parqueadero existente para la prueba manual (US1), pero sus pruebas automatizadas son independientes (mocks).
-- **US4** reutiliza `ParqueaderoForm` (US1): implementar US1 primero.
-
-### Parallel Opportunities
-
-- T004–T009 (pgTAP) en paralelo.
-- T011–T017 en paralelo.
-- T023 y T024 en paralelo con T018–T022.
-- Dentro de cada story, las tareas de pruebas [P] van en paralelo.
-
-## Parallel Example: Foundational
-
-```bash
-Task: "T015 domain.ts"     Task: "T016 domain.test.ts"
-Task: "T017 rpcErrors.ts"  Task: "T012 format.ts"
-Task: "T023 componentes UI" Task: "T024 MapBase + markerIcons"
-```
+- Setup → Foundational → stories. T002 (mocks) antes de las páginas.
+- T005 → T006/T008; T007 → T008 → T009; T010 → T011/T012.
+- US1 → US2 (recomendado); US3, US4 y US5 necesitan un parqueadero para la prueba manual. US4 reutiliza `ParkingForm` (US1).
+- Paralelo: T003–T007, T013 y T014; las pruebas [P] de cada story.
 
 ## Implementation Strategy
 
-1. Foundational completa (la base de datos primero, porque es la fuente de verdad de las reglas).
-2. **MVP**: US1 + US2 (registrar y consultar) → validar → commit.
-3. US3 (ocupación, el valor diario) → US4 (edición) → US5 (celdas).
-4. Polish → merge a `main`.
-5. Commits: `feat(002): T039 gestión de ocupación`.
+1. Foundational (dominio + servicio, con pruebas exhaustivas del orden de escritura).
+2. **MVP**: US1 + US2 → validar (incluido el caso de permisos del back).
+3. US3 → US4 → US5 → Polish → PR a `develop`.
