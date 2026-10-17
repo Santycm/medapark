@@ -1,5 +1,5 @@
 ---
-description: "Task list for 003-consulta-publica (solo front, back existente sin cambios)"
+description: "Task list for 003-consulta-publica (back existente; cambios del back solo vía CB-NNN autorizado)"
 ---
 
 # Tasks: Consulta Pública de Parqueaderos
@@ -10,7 +10,7 @@ description: "Task list for 003-consulta-publica (solo front, back existente sin
 
 **Tests**: OBLIGATORIAS (Principio IV): Vitest con `supabase` simulado.
 
-**⚠️ Reglas**: sin SQL ni cambios en Supabase; no eliminar pantallas del repo; no hacer push a `main`.
+**⚠️ Reglas**: esta feature no cambia Supabase; cambios en el back solo vía CB-NNN autorizado (🔴 CRITICIDAD ALTA, `docs/cambios-back/`); no eliminar pantallas del repo; no hacer push a `main`.
 
 **Organization**: US1 = HU9 Mapa (P1), US2 = HU10 Detalle (P1), US3 = HU11 Cómo llegar (P2).
 

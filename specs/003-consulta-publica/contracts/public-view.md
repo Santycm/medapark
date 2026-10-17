@@ -1,6 +1,6 @@
 # Contrato: datos públicos desde la vista existente (003)
 
-El back **no se modifica**. La vista `public.public_parking_lots` (`docs/supabase-esquema-actual.md` §1) ya:
+Esta feature **no requiere cambios en el back**. La vista `public.public_parking_lots` (`docs/supabase-esquema-actual.md` §1) ya:
 
 - incluye solo los parqueaderos con `status = true` y al menos un tipo con `total_spaces > 0`
   (regla de publicabilidad);

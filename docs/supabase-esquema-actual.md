@@ -6,9 +6,9 @@ modificó nada.
 **Datos al momento de la lectura**: 5 filas en `parking_lots` y 10 en `parking_vehicle_configs` (datos de
 prueba del equipo; no se leyó su contenido).
 
-> ⚠️ **Regla del proyecto**: el back (Supabase) lo administran otras personas. Este repo **no** contiene
-> migraciones ni propone cambios de esquema: el front se adapta a la BD tal como está. Los agentes de IA solo
-> leen el Supabase remoto. Ver la constitución, Principio II.
+> 🔴 **Regla del proyecto**: el equipo administra el back. **Todo cambio en él es de CRITICIDAD ALTA y
+> requiere un check de autorización explícito** antes de ejecutarse (`docs/cambios-back/README.md`). Las
+> lecturas no requieren autorización. Ver la constitución, Principio II.
 
 ## 1. DDL reconstruido (baseline)
 
@@ -178,14 +178,14 @@ Reglas que valida **solo el front** (el back no las expresa): teléfono solo con
 texto, al menos un tipo atendido, aviso de coordenadas fuera de Medellín y la secuencia de guardado de la
 edición (ver la spec 002).
 
-## 4. Nota para el equipo que administra el back
+## 4. Brechas conocidas → solicitudes de cambio
 
 Según la lectura del 2026-10-17 (`has_table_privilege`), el rol `authenticated` tiene `SELECT` en
 `parking_lots` y `SELECT`/`DELETE` en `parking_vehicle_configs`, pero **no** `INSERT`/`UPDATE` en esas dos
 tablas, aunque las políticas RLS de insert y update ya existen. Sin esos privilegios, el registro (HU3), la
 edición (HU5) y la configuración de celdas (HU6) del front recibirán "permission denied" (`42501`).
 
-**Por favor verificar** si deben concederse (por ejemplo, `INSERT, UPDATE` a `authenticated` en ambas
+**Solicitud**: [`CB-001`](cambios-back/CB-001-permisos-escritura-admin.md) (🔴 CRITICIDAD ALTA, ⏳ pendiente de autorización). Propone conceder (por ejemplo, `INSERT, UPDATE` a `authenticated` en ambas
 tablas); las políticas existentes ya limitan esas escrituras al dueño con sesión `aal2`. Observación menor:
 `anon` y `authenticated` tienen privilegios de escritura sobre la vista `public_parking_lots` (no es
 actualizable por sus JOIN, así que no hay impacto funcional).

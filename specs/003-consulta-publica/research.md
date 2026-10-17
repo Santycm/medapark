@@ -1,6 +1,6 @@
 # Research: Consulta Pública (003)
 
-**Feature**: `003-consulta-publica` · **Fecha**: 2026-10-17 (rev. back existente, solo front)
+**Feature**: `003-consulta-publica` · **Fecha**: 2026-10-17 (rev. back existente; cambios del back vía CB-NNN, CRITICIDAD ALTA)
 
 ## R1. Datos públicos: la vista existente `public_parking_lots`
 

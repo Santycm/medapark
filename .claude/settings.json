@@ -7,6 +7,10 @@
       "Bash(git push -u origin main:*)",
       "Bash(git push --force:*)",
       "Bash(git push -f:*)",
+      "Read(./.env)",
+      "Read(./.env.*)"
+    ],
+    "ask": [
       "Bash(npx supabase db push:*)",
       "Bash(supabase db push:*)",
       "Bash(npx supabase db reset:*)",
@@ -21,8 +25,10 @@
       "Bash(supabase functions deploy:*)",
       "Bash(npx supabase secrets:*)",
       "Bash(supabase secrets:*)",
-      "Read(./.env)",
-      "Read(./.env.*)"
+      "Bash(npx supabase db query:*)",
+      "Bash(supabase db query:*)",
+      "Bash(npx supabase link:*)",
+      "Bash(supabase link:*)"
     ]
   }
 }

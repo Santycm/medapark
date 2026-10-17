@@ -10,6 +10,10 @@ entradas en `[Unreleased]`, citando la feature y la tarea, por ejemplo `(001/T03
 
 ### Added
 
+- 🔴 **Control de cambios del back con CRITICIDAD ALTA**: proceso obligatorio con check de autorización
+  explícito (`docs/cambios-back/README.md`), plantilla de solicitud y **CB-001** (permisos INSERT/UPDATE del
+  administrador, ⏳ pendiente de autorización, no ejecutado).
+
 - AI readiness del repo:
   - `AGENTS.md`, con las reglas obligatorias para agentes y personas: SDD, arquitectura por capas,
     patrones, prohibiciones, Gitflow, Definition of Done y matriz anti-desalineación;
@@ -34,6 +38,10 @@ entradas en `[Unreleased]`, citando la feature y la tarea, por ejemplo `(001/T03
 
 ### Changed
 
+- Constitución 3.0.0: el equipo administra el back; todo cambio en él es de CRITICIDAD ALTA con check de
+  autorización (antes: back externo de solo lectura). `AGENTS.md` §2.1, plantilla de PR, instrucciones de
+  Copilot y `.claude/settings.json` (ahora pide confirmación en los comandos de escritura de Supabase)
+  alineados. Specs 001–003 actualizadas (la dependencia de la 002 pasa a ser CB-001).
 - `README.md`: descripción del proyecto como solo front, Gitflow y guía de Spec Kit.
 - `.gitignore`: combina las reglas del repo original con las de Spec Kit, Supabase CLI y Netlify.
 

@@ -1,6 +1,6 @@
 # Research: Gestión del Parqueadero (002)
 
-**Feature**: `002-gestion-parqueadero` · **Fecha**: 2026-10-17 (rev. back existente, solo front)
+**Feature**: `002-gestion-parqueadero` · **Fecha**: 2026-10-17 (rev. back existente; cambios del back vía CB-NNN, CRITICIDAD ALTA)
 
 Formato *Decision / Rationale / Alternatives considered*. No quedan `NEEDS CLARIFICATION`.
 
@@ -11,7 +11,7 @@ Formato *Decision / Rationale / Alternatives considered*. No quedan `NEEDS CLARI
 - **Decision**: usar las tablas reales `public.parking_lots` y `public.parking_vehicle_configs`
   (`docs/supabase-esquema-actual.md`), con sus nombres en inglés, `status` booleano (`true` = Activo) y
   `vehicle_type` `'CAR' | 'MOTORCYCLE'`. Los tipos TS se generan con `supabase gen types` (solo lectura).
-- **Rationale**: Principio II (el back es externo y no se modifica). El modelo existente coincide con el
+- **Rationale**: Principio II (se minimizan los cambios en el back, que son de criticidad ALTA). El modelo existente coincide con el
   diseño de las HU (1 parqueadero por admin y 1 configuración por tipo con tarifa, capacidad y ocupadas).
 
 ## R2. Escrituras: directas a las tablas con la RLS existente
@@ -25,10 +25,10 @@ Formato *Decision / Rationale / Alternatives considered*. No quedan `NEEDS CLARI
   - borrar un tipo exige `total_spaces = 0` y `occupied_spaces = 0`;
   - `0 ≤ occupied_spaces ≤ total_spaces` (`CHECK`).
 - **Dependencia externa**: hoy el rol `authenticated` no tiene privilegios `INSERT`/`UPDATE` en esas tablas
-  (nota para el equipo del back, `docs/supabase-esquema-actual.md` §4). Hasta que se concedan, el front
+  (solicitud `docs/cambios-back/CB-001-permisos-escritura-admin.md`, 🔴 ALTA, pendiente de autorización). Hasta que se aplique, el front
   muestra `MSG.general.permisoDenegado` en esas operaciones.
-- **Alternatives considered**: RPC transaccionales nuevas (descartadas: requieren cambiar la BD, lo que no
-  está permitido).
+- **Alternatives considered**: RPC transaccionales nuevas (posibles como un CB-NNN autorizado, pero se
+  descartan para el MVP para minimizar los cambios de criticidad ALTA).
 
 ## R3. Atomicidad sin RPC (registro y edición)
 

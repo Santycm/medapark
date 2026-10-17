@@ -6,7 +6,7 @@ escribir cualquier cambio, lee y cumple **`AGENTS.md`** (reglas obligatorias), l
 
 Resumen de reglas críticas (el detalle está en `AGENTS.md`):
 
-- Solo front: **no** modificar Supabase (ni SQL, ni migraciones, ni permisos). El back lo administran otras personas.
+- **Back (Supabase): todo cambio es 🔴 CRITICIDAD ALTA** y requiere un **check de autorización explícito** ("Autorizo CB-NNN" de una persona responsable) antes de ejecutarse. Proceso en `docs/cambios-back/README.md` y `AGENTS.md` §2.1. Las lecturas no requieren autorización.
 - **Nunca** hacer push ni merge a `main` (Netlify publica automáticamente). Gitflow: `develop` + `feature/NNN-nombre`.
 - Primero la spec y las tareas, después el código. Cada cambio se traza HU → FR → tarea.
 - Respetar las capas y patrones de `AGENTS.md` §3 (servicios con `Result`, dominio puro, `MSG`, tokens Tailwind).

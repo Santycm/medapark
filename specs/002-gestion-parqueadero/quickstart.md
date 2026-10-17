@@ -5,11 +5,11 @@
 - Feature 001 implementada y validada.
 - Dos administradores con MFA enrolado: `admin1` (**sin** parqueadero) y `admin2` (sin parqueadero), creados
   por el equipo del back.
-- **Dependencia del back** (`docs/supabase-esquema-actual.md` §4): para US1, US4 y US5, el equipo del back
-  debe haber concedido `INSERT`/`UPDATE` a `authenticated` en `parking_lots` y `parking_vehicle_configs`. Si
+- **Dependencia del back** (solicitud **CB-001**, 🔴 CRITICIDAD ALTA): para US1, US4 y US5, debe estar
+  **autorizada y aplicada** la concesión de `INSERT`/`UPDATE` a `authenticated` en `parking_lots` y `parking_vehicle_configs`. Si
   no, esas operaciones deben mostrar "No tienes permisos para realizar esta acción. Contacta al
   administrador del sistema." (validar también este caso).
-- Nunca se modifica la BD desde este proyecto.
+- Ningún cambio en la BD se hace sin una solicitud CB-NNN autorizada (`docs/cambios-back/`).
 
 ## 1. Verificación automatizada
 

@@ -10,7 +10,7 @@ description: "Task list for 001-autenticacion-admin (sobre el repo existente San
 
 **Tests**: OBLIGATORIAS (constitución, Principio IV): Vitest con Supabase simulado. **Nunca** contra el Supabase remoto.
 
-**⚠️ Reglas**: no modificar Supabase (ni SQL, ni migraciones, ni configuración); no eliminar las pantallas existentes fuera del MVP; no hacer push a `main`.
+**⚠️ Reglas**: esta feature no cambia Supabase; cambios en el back solo vía CB-NNN autorizado (🔴 CRITICIDAD ALTA, `docs/cambios-back/`); no eliminar las pantallas existentes fuera del MVP; no hacer push a `main`.
 
 **Organization**: US1 = HU1, US2 = HU2, US3 = HU8.
 
@@ -102,7 +102,7 @@ description: "Task list for 001-autenticacion-admin (sobre el repo existente San
 - [ ] T043 [P] Prueba `src/router/latentRoutes.test.tsx`: renderizar Login, VerifyMfa, MfaEnroll, AdminLayout y PublicLayout y afirmar que no hay enlaces a `/forgot-password`, `/update-password`, `/profile` ni `/setup-mfa` (FR-032)
 - [ ] T044 [P] Si `src/components/auth/ProtectedRoute.tsx` ya no tiene usos (`rg ProtectedRoute src`), marcarlo con un comentario `/** @deprecated Reemplazado por src/router/guards (MFA obligatorio). Se conserva por decisión del equipo. */` (no eliminar)
 - [ ] T045 [P] Revisión responsive (360, 768 y 1280 px) y de accesibilidad (teclado Login → MFA → panel → modal, foco visible, contraste AA)
-- [ ] T046 [P] Actualizar `README.md` (sección "Desarrollo": `.env`, scripts, Gitflow, regla de solo lectura de Supabase)
+- [ ] T046 [P] Actualizar `README.md` (sección "Desarrollo": `.env`, scripts, Gitflow, control de cambios del back con CRITICIDAD ALTA)
 - [ ] T047 `npm run lint`, `npm run typecheck`, `npm test` y `npm run build` en verde
 - [ ] T048 Validación manual completa de `quickstart.md` y resultados en `specs/001-autenticacion-admin/checklists/validacion-manual.md`
 - [ ] T049 Abrir un PR `feature/001-autenticacion-admin` → `develop` (nunca a `main`)
