@@ -19,6 +19,14 @@ Esta feature entrega además la **estructura base del área administrativa**: en
 administrador y "Cerrar sesión", menú lateral, protección de rutas y un panel inicial. El contenido funcional
 del panel (HU4) y las demás pantallas de gestión se especifican en `002-gestion-parqueadero`.
 
+## Clarifications
+
+### Session 2026-10-17
+
+- Q: ¿Qué mecanismo de segundo factor se usa (HU2)? → A: TOTP nativo de la plataforma de autenticación (app autenticadora), con enrolamiento por QR la primera vez. "Reenviar código" se reemplaza (ver *Desviaciones*).
+- Q: ¿Cuántos intentos fallidos consecutivos de código se permiten? → A: 5. Al 5.º fallo se cancela la autenticación pendiente y se vuelve a "Iniciar sesión" (FR-016), además del límite de frecuencia del servidor.
+- Q: ¿La sesión se cierra por inactividad? → A: No. La sesión solo termina con "Cerrar sesión" o al expirar o invalidarse según la plataforma (FR-023). No hay temporizador de inactividad.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Iniciar sesión con correo y contraseña (Priority: P1) · HU1
@@ -200,7 +208,7 @@ igual.
 
 - Las cuentas de administrador las crea el equipo desde el panel de la plataforma de backend, con el correo ya confirmado. No hay invitación por correo.
 - El administrador dispone de un teléfono con una app autenticadora compatible con TOTP (Google Authenticator, Microsoft Authenticator, Authy, etc.).
-- La duración de la sesión y su renovación usan los valores por defecto de la plataforma de autenticación (sesión renovable mientras el navegador permanezca activo). No hay "recordarme".
+- La duración de la sesión y su renovación usan los valores por defecto de la plataforma de autenticación (sesión persistente y renovable, también entre cierres del navegador). No hay cierre por inactividad ni opción "recordarme".
 - El conteo de 5 intentos fallidos se lleva por autenticación pendiente en el navegador y se complementa con el límite de frecuencia del servidor. Para un MVP académico se considera suficiente.
 - El enlace "Acceso administradores" del área pública es una adición mínima necesaria para llegar a la pantalla de login. No hay HU que lo prohíba.
 - La HU1 exige que la validación se conecte al servicio de autenticación de la plataforma de backend elegida (Supabase Auth). Esto se concreta en el plan.
