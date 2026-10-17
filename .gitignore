@@ -1,0 +1,32 @@
+# Dependencias y builds
+node_modules/
+dist/
+build/
+coverage/
+.vite/
+
+# Variables de entorno (nunca versionar llaves reales)
+.env
+.env.*
+!.env.example
+
+# Supabase CLI
+supabase/.branches/
+supabase/.temp/
+supabase/.env
+
+# Netlify
+.netlify/
+
+# Agentes: solo se versionan las skills de Spec Kit
+.claude/*
+!.claude/skills/
+.claude/settings.local.json
+
+# Pencil / editores / SO
+*.log
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
