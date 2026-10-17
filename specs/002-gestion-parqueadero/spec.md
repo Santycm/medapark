@@ -18,7 +18,11 @@ mantener actualizada la disponibilidad que verán los Usuarios en el mapa públi
 Las celdas se manejan como **conteos agregados por tipo de vehículo** (automóviles y motocicletas). No
 existen celdas individuales, placas ni historial de movimientos.
 
-**Dependencias**: feature 001 (sesión completa, layout administrativo y protección de rutas).
+**Dependencias**: feature 001 (sesión completa, layout administrativo y protección de rutas) y el **back
+existente** de Supabase, administrado por otras personas y **sin cambios** (`docs/supabase-esquema-actual.md`).
+El back ya garantiza: un parqueadero por administrador, acceso solo del dueño con sesión completa,
+`0 ≤ ocupadas ≤ capacidad`, tarifa > 0, crear un tipo solo con capacidad > 0, eliminar un tipo solo con capacidad
+y ocupadas en 0, y el registro atómico de ingresos y salidas.
 
 ## Clarifications
 
@@ -29,6 +33,9 @@ existen celdas individuales, placas ni historial de movimientos.
 - Q: ¿El formulario de registro/edición incluye mapa para ubicar el parqueadero? → A: sí, un mapa selector (clic o arrastre del marcador para llenar latitud y longitud), sin buscador ni geocodificación. Los campos de latitud y longitud siguen siendo editables a mano.
 - Q: ¿La configuración de celdas (HU6) tiene pantalla propia? → A: sí, la pantalla "Configurar celdas" con controles +/−, además de los campos de capacidad en los formularios de registro y edición.
 - Q: ¿Se registra la placa en la gestión de ocupación (HU7)? → A: no. Fuera de alcance.
+- Q: ¿Se puede modificar la base de datos para soportar esta feature? → A: **no**. El back lo administran otras personas; el front se adapta a él tal como está. Las reglas que el back no expresa se validan en el front.
+- Q: ¿Qué capacidad mínima tiene un tipo de vehículo al registrarlo o agregarlo? → A: 1 celda (HU6: "enteros mayores a cero"; el back no permite crear un tipo con 0). Un tipo existente sí puede bajar a 0 después (HU6), siempre que no tenga celdas ocupadas.
+- Q: ¿El guardado de la edición es atómico? → A: el back no ofrece una operación atómica para la edición, así que el front valida **todas** las reglas con datos recién leídos antes de escribir y guarda en un orden que minimiza los estados intermedios. Si un paso falla, se informa y se recarga la información.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -47,7 +54,7 @@ registro desaparece.
 **Acceptance Scenarios**:
 
 1. **Given** un administrador autenticado sin parqueadero, **When** abre "Registrar parqueadero", **Then** ve el formulario con: Nombre*, Dirección*, Latitud*, Longitud*, mapa selector, Teléfono de contacto*, Correo electrónico de contacto (opcional), Horario de atención*, Tipos de vehículo atendidos* (Automóviles, Motocicletas) y los botones "Cancelar" y "Guardar".
-2. **Given** el formulario, **When** marca "Automóviles", **Then** aparecen los campos obligatorios "Tarifa por hora (Automóviles)" y "Capacidad de celdas (Automóviles)"; si desmarca el tipo, esos campos desaparecen. Lo mismo aplica a "Motocicletas".
+2. **Given** el formulario, **When** marca "Automóviles", **Then** aparecen los campos obligatorios "Tarifa por hora (Automóviles)" y "Capacidad de celdas (Automóviles)" (mínimo 1); si desmarca el tipo, esos campos desaparecen. Lo mismo aplica a "Motocicletas".
 3. **Given** campos obligatorios vacíos, **When** pulsa "Guardar", **Then** no se guarda, cada campo faltante se resalta en rojo con su mensaje y se muestra "Debe completar los campos obligatorios".
 4. **Given** el teléfono "300-123 45ab", **When** sale del campo o guarda, **Then** se muestra "Solo se permiten caracteres numéricos." y no se guarda.
 5. **Given** el correo de contacto "contacto@dominio", **When** sale del campo o guarda, **Then** se muestra "Debe tener un formato de correo electrónico válido." y no se guarda. Si el correo queda vacío, se guarda sin error.
@@ -55,8 +62,9 @@ registro desaparece.
 7. **Given** coordenadas válidas fuera del Valle de Aburrá (por ejemplo, 4.7110, -74.0721), **When** se ingresan, **Then** se muestra el aviso "La ubicación está fuera de Medellín. Verifica las coordenadas." y **sí** se permite guardar.
 8. **Given** el mapa selector, **When** el administrador hace clic en un punto o arrastra el marcador, **Then** Latitud y Longitud se llenan con ese punto (6 decimales). Si escribe coordenadas válidas, el marcador se mueve a ellas.
 9. **Given** todos los datos válidos, **When** pulsa "Guardar", **Then** se muestra "Parqueadero registrado exitosamente", el parqueadero queda asociado a su cuenta en estado **Activo**, con 0 celdas ocupadas por tipo, y el administrador llega al panel (US2).
+13. **Given** una capacidad de 0 para un tipo marcado, **When** pulsa "Guardar", **Then** se muestra "Ingresa un valor entero entre 1 y 9.999." en ese campo y no se guarda.
 10. **Given** un administrador que ya tiene parqueadero, **When** intenta abrir "Registrar parqueadero" (botón o URL), **Then** la opción no está disponible y es redirigido a su panel.
-11. **Given** un parqueadero recién registrado con capacidad 0 en todos sus tipos, **When** se consulta el mapa público, **Then** no aparece hasta que tenga al menos un tipo con capacidad mayor a 0.
+11. **Given** un parqueadero cuyos tipos quedaron luego con capacidad 0 (US5), **When** se consulta el mapa público, **Then** no aparece hasta que vuelva a tener al menos un tipo con capacidad mayor a 0.
 12. **Given** el formulario con datos, **When** pulsa "Cancelar", **Then** se descartan los datos y vuelve al panel (que muestra la opción "Registrar parqueadero").
 
 ---
@@ -129,11 +137,11 @@ la capacidad por debajo de las ocupadas.
 4. **Given** "Motocicletas" atendido con capacidad guardada 20, **When** intenta desmarcarlo, **Then** se muestra la advertencia "Debe reducir a cero las celdas de este tipo de vehículo antes de quitarlo de los tipos atendidos" y el tipo permanece marcado.
 5. **Given** "Motocicletas" atendido con capacidad guardada 0, **When** lo desmarca y guarda, **Then** el parqueadero deja de atender motocicletas y su tarifa y capacidad se eliminan.
 6. **Given** un único tipo atendido con capacidad guardada 0, **When** lo desmarca y pulsa "Guardar cambios", **Then** no se guarda, "Tipos de vehículo atendidos" se resalta en rojo y se muestra "Debe completar los campos obligatorios" (debe quedar al menos un tipo).
-7. **Given** automóviles con 32 ocupadas, **When** cambia la capacidad de automóviles a 30 y guarda, **Then** se muestra "No puede reducir la cantidad de celdas por debajo de las celdas actualmente ocupadas" y no se guarda **ningún** cambio del formulario.
+7. **Given** automóviles con 32 ocupadas, **When** cambia la capacidad de automóviles a 30 y guarda, **Then** se muestra "No puede reducir la cantidad de celdas por debajo de las celdas actualmente ocupadas" y no se guarda **ningún** cambio del formulario (la validación ocurre antes de escribir, con datos recién leídos).
 8. **Given** el estado cambiado a Inactivo y guardado, **When** un Usuario carga el mapa público, **Then** el parqueadero no aparece en el mapa ni en ninguna consulta pública. Al volver a Activo (con capacidad > 0) vuelve a aparecer.
 9. **Given** latitud o longitud modificadas y guardadas, **When** se consulta el mapa público o "Cómo llegar", **Then** se usa la nueva ubicación.
 10. **Given** cambios sin guardar, **When** pulsa "Cancelar", **Then** se descartan y vuelve al panel con la información previa intacta.
-11. **Given** un tipo nuevo marcado durante la edición (por ejemplo, Motocicletas), **When** guarda, **Then** su tarifa y su capacidad son obligatorias y el tipo inicia con 0 ocupadas.
+11. **Given** un tipo nuevo marcado durante la edición (por ejemplo, Motocicletas), **When** guarda, **Then** su tarifa y su capacidad (mínimo 1) son obligatorias y el tipo inicia con 0 ocupadas.
 
 ---
 
@@ -163,7 +171,10 @@ de las ocupadas y guardar valores válidos; verificar el total y el panel.
 ### Edge Cases
 
 - **Sesión de solo primer factor o vencida** al guardar o registrar: el servidor rechaza la operación y el administrador es redirigido a "Iniciar sesión" (feature 001), sin cambios en los datos.
-- **Registro duplicado** (dos pestañas pulsan "Guardar" en el registro a la vez): solo se crea un parqueadero; la segunda muestra "Ya tienes un parqueadero registrado." y redirige al panel.
+- **Registro duplicado** (dos pestañas pulsan "Guardar" en el registro a la vez): el back solo permite un parqueadero por cuenta; la segunda muestra "Ya tienes un parqueadero registrado." y redirige al panel.
+- **Registro incompleto**: si el parqueadero se crea pero falla el guardado de sus tipos de vehículo, se muestra "El parqueadero se registró, pero no se pudieron guardar los tipos de vehículo. Agrégalos desde Editar información." El panel muestra ese parqueadero con el aviso "Tu parqueadero no tiene tipos de vehículo configurados." y el acceso a "Editar información".
+- **Guardado parcial en la edición**: si un paso del guardado falla después de que otro tuvo éxito (red o permisos), se muestra "Algunos cambios no se pudieron guardar. Revisa la información e intenta nuevamente." y el formulario se recarga con los datos reales del servidor.
+- **Permisos del back**: si el back rechaza una operación por permisos, se muestra "No tienes permisos para realizar esta acción. Contacta al administrador del sistema." y no cambia nada en pantalla (ver la nota para el equipo del back en `docs/supabase-esquema-actual.md` §4).
 - **Edición concurrente** en dos pestañas: gana la última en guardar (no hay bloqueo optimista en el MVP), excepto las reglas de capacidad y ocupación, que siempre se validan contra el valor actual del servidor.
 - **Ocupación cambió mientras se editaba la capacidad**: la validación "capacidad ≥ ocupadas" se evalúa en el servidor al guardar; si falla, se muestra el mensaje de HU6 y se recargan los valores.
 - **El mapa selector no carga** (sin internet hacia los mosaicos): el formulario sigue siendo usable escribiendo latitud y longitud a mano.
@@ -182,17 +193,17 @@ de las ocupadas y guardar valores válidos; verificar el total y el panel.
 - **FR-001**: Todas las funcionalidades de esta feature MUST requerir una sesión completamente autenticada (ambos factores). Sin ella, el administrador es redirigido a "Iniciar sesión".
 - **FR-002**: Cada cuenta de administrador MUST tener **como máximo un** parqueadero, asociado a la cuenta de forma permanente. El sistema MUST impedir en el servidor la creación de un segundo parqueadero.
 - **FR-003**: El administrador MUST poder consultar y modificar **solo** su propio parqueadero. El servidor MUST rechazar cualquier lectura o escritura sobre parqueaderos de otros administradores, aunque se manipulen las peticiones.
-- **FR-004**: Las invariantes `0 ≤ ocupadas ≤ capacidad` por tipo y "al menos un tipo atendido" MUST garantizarse en el servidor, no solo en la interfaz.
+- **FR-004**: La invariante `0 ≤ ocupadas ≤ capacidad` la garantiza el back; el front MUST respetarla y prevenir los intentos inválidos. "Al menos un tipo atendido" y los formatos de teléfono y longitud de textos MUST validarse en el front (el back no los expresa).
 - **FR-005**: Los textos de error y confirmación citados en las HU MUST mostrarse literalmente (`docs/analisis-mvp.md` §7).
 
 **Registro (HU3)**
 
-- **FR-006**: El formulario de registro MUST incluir: Nombre del parqueadero (obligatorio, 3–100 caracteres), Dirección (obligatorio, 5–200), Latitud y Longitud (obligatorios, numéricos con hasta 6 decimales), Teléfono de contacto (obligatorio, solo dígitos, 7–10), Correo electrónico de contacto (opcional, formato válido), Horario de atención (obligatorio, texto libre de 3–120 caracteres), Tipos de vehículo atendidos (obligatorio, al menos uno de Automóviles y Motocicletas) y, por cada tipo marcado, Tarifa por hora (obligatoria, entero en COP de 1 a 999.999) y Capacidad de celdas (obligatoria, entero de 0 a 9.999).
+- **FR-006**: El formulario de registro MUST incluir: Nombre del parqueadero (obligatorio, 3–100 caracteres), Dirección (obligatorio, 5–200), Latitud y Longitud (obligatorios, numéricos con hasta 6 decimales), Teléfono de contacto (obligatorio, solo dígitos, 7–10), Correo electrónico de contacto (opcional, formato válido), Horario de atención (obligatorio, texto libre de 3–120 caracteres), Tipos de vehículo atendidos (obligatorio, al menos uno de Automóviles y Motocicletas) y, por cada tipo marcado, Tarifa por hora (obligatoria, entero en COP de 1 a 999.999) y Capacidad de celdas (obligatoria, entero de **1** a 9.999 al registrar o agregar un tipo; de 0 a 9.999 al editar un tipo ya existente).
 - **FR-007**: Si falta algún campo obligatorio al guardar, el sistema MUST mostrar "Debe completar los campos obligatorios" y resaltar en rojo cada campo faltante.
 - **FR-008**: Teléfono con caracteres no numéricos → "Solo se permiten caracteres numéricos."; correo de contacto inválido → "Debe tener un formato de correo electrónico válido."; latitud fuera de −90..90 → "Rango válido: -90 a 90."; longitud fuera de −180..180 → "Rango válido: -180 a 180.".
 - **FR-009**: Si las coordenadas válidas quedan fuera del área del Valle de Aburrá (latitud 6.00 a 6.50 y longitud −75.75 a −75.30), el sistema MUST mostrar el aviso no bloqueante "La ubicación está fuera de Medellín. Verifica las coordenadas.".
 - **FR-010**: El formulario MUST incluir un mapa selector centrado en Medellín que, al hacer clic o arrastrar el marcador, llene Latitud y Longitud. No se ofrece búsqueda de direcciones.
-- **FR-011**: Al guardar con éxito, el sistema MUST crear el parqueadero en estado **Activo**, con 0 celdas ocupadas por tipo, asociado al administrador autenticado; mostrar "Parqueadero registrado exitosamente" y llevar al panel.
+- **FR-011**: Al guardar con éxito, el sistema MUST crear el parqueadero en estado **Activo**, con 0 celdas ocupadas por tipo, asociado al administrador autenticado; mostrar "Parqueadero registrado exitosamente" y llevar al panel. Si el parqueadero se crea pero sus tipos no, aplica el caso límite "Registro incompleto".
 - **FR-012**: La opción "Registrar parqueadero" MUST estar disponible solo para administradores sin parqueadero; en otro caso, la ruta redirige al panel.
 
 **Panel (HU4)**
@@ -206,7 +217,7 @@ de las ocupadas y guardar valores válidos; verificar el total y el panel.
 
 - **FR-017**: El formulario de edición MUST permitir modificar todos los campos de HU3 más el Estado (Activo/Inactivo), con las mismas validaciones.
 - **FR-018**: El sistema MUST impedir desmarcar un tipo de vehículo cuya capacidad **guardada** sea mayor a 0, mostrando "Debe reducir a cero las celdas de este tipo de vehículo antes de quitarlo de los tipos atendidos".
-- **FR-019**: Guardar la edición MUST ser atómico: si cualquier regla falla (incluida la de capacidad frente a ocupadas), no se guarda ningún cambio.
+- **FR-019**: Antes de escribir, el sistema MUST volver a leer el parqueadero y validar **todas** las reglas (capacidad ≥ ocupadas, tipos a quitar con capacidad guardada 0, al menos un tipo, capacidad ≥ 1 en los tipos nuevos). Si alguna falla, no se escribe nada. Si todas pasan, guarda primero los cambios de los tipos y después los datos generales; ante un fallo intermedio aplica el caso límite "Guardado parcial".
 - **FR-020**: Al guardar con éxito: "Información actualizada exitosamente" y retorno al panel. "Cancelar" descarta los cambios.
 - **FR-021**: Un parqueadero Inactivo MUST dejar de ser publicable de inmediato. Al volver a Activo, es publicable de nuevo si tiene capacidad mayor a 0 en algún tipo.
 
@@ -228,7 +239,7 @@ de las ocupadas y guardar valores válidos; verificar el total y el panel.
 ### Key Entities
 
 - **Parqueadero**: establecimiento de un único administrador. Atributos: nombre, estado (activo/inactivo), dirección, latitud, longitud, teléfono, correo de contacto (opcional), horario de atención, fechas de creación y actualización.
-- **Oferta por tipo de vehículo**: lo que un parqueadero ofrece para un tipo (automóvil o motocicleta). Atributos: tarifa por hora (COP), capacidad total y celdas ocupadas. Existe solo para los tipos atendidos (1 o 2 por parqueadero). Las disponibles se calculan como capacidad − ocupadas.
+- **Configuración por tipo de vehículo**: lo que un parqueadero ofrece para un tipo (automóvil o motocicleta). Atributos: tarifa por hora (COP), capacidad total y celdas ocupadas. Existe solo para los tipos atendidos (1 o 2 por parqueadero). Las disponibles se calculan como capacidad − ocupadas.
 - **Administrador**: cuenta de la feature 001; dueño de 0 o 1 parqueadero.
 - **Publicabilidad** (regla derivada): un parqueadero es visible al público si está Activo y la suma de sus capacidades es mayor a 0.
 
@@ -250,7 +261,8 @@ de las ocupadas y guardar valores válidos; verificar el total y el panel.
 | HU7 | "La cantidad de celdas ocupadas debe superar la capacidad total" | **No debe** superar la capacidad | Errata evidente |
 | HU7 | "La cantidad de celdas ocupadas debe ser inferior a cero" | **No debe** ser inferior a cero | Errata evidente |
 | HU7 | Campo "Registrar placa" | Excluido | Sin historial; no aparece en el prototipo (decisión del equipo) |
-| HU6 | "Valores enteros mayores a cero" y "se puede actualizar a 0" | Enteros ≥ 0, sujetos a capacidad ≥ ocupadas | Contradicción interna; el prototipo dice "mayor o igual a 0" |
+| HU6 | "Valores enteros mayores a cero" y "se puede actualizar a 0" | ≥ 1 al crear un tipo; ≥ 0 al actualizar un tipo existente, sujeto a capacidad ≥ ocupadas | Contradicción interna; el back no permite crear un tipo con capacidad 0 |
+| HU5 | Guardado de la edición (implícitamente atómico) | Validación previa completa + guardado secuencial con manejo de guardado parcial | El back (sin cambios) no ofrece una operación atómica para la edición |
 | HU7/HU8 | Refieren el panel como "HU3" | El panel es la HU4 | Errata de referencia |
 | HU3 | "No se muestra en un mapa propio de edición" | Se incluye el mapa selector (sin geocodificación) | Decisión del equipo según el prototipo |
 | HU3 | Campo "Estado" en el registro | No se muestra en el registro; siempre inicia Activo. Se cambia en HU5 | La HU indica "Activo por defecto"; el prototipo de HU3 no lo muestra |
@@ -263,7 +275,8 @@ de las ocupadas y guardar valores válidos; verificar el total y el panel.
 
 - Moneda: pesos colombianos (COP), enteros, solo tarifa por hora (sin fracciones, días ni mensualidades).
 - El área de referencia "Medellín" para el aviso de coordenadas es el rectángulo aproximado del Valle de Aburrá: latitud 6.00–6.50, longitud −75.75 a −75.30.
-- No hay carga de datos de ejemplo. Para pruebas y demo, el equipo crea cuentas y registra parqueaderos desde la aplicación.
+- No hay carga de datos de ejemplo desde este proyecto. El back ya tiene parqueaderos de prueba cargados por el equipo; para la demo se usan esos o se registran desde la aplicación.
+- El back debe conceder al administrador autenticado los permisos de creación y edición de su parqueadero (pendiente de verificación por el equipo del back, `docs/supabase-esquema-actual.md` §4). Sin ellos, US1, US4 y US5 muestran el mensaje de permisos.
 - La edición concurrente del mismo parqueadero en dos pestañas es improbable (un solo administrador); se acepta "gana el último" salvo las reglas de capacidad y ocupación.
 - No se requiere eliminar un parqueadero; para retirarlo de la consulta pública se usa el estado Inactivo.
 - El teléfono admite fijos y celulares colombianos sin indicativo (7 a 10 dígitos).

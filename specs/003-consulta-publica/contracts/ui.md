@@ -1,25 +1,17 @@
 # Contrato: página pública y componentes (003)
 
-## Ruta
+## Rutas
 
 | Ruta | Página | Layout | Guard |
 |------|--------|--------|-------|
-| `/` (con el query opcional `?parqueadero=<uuid>`) | `MapaParqueaderosPage` (reemplaza el `HomePage` placeholder de la 001) | `PublicLayout` (001) | ninguno |
+| `/` (con el query opcional `?parqueadero=<uuid>`) | `pages/public/Home` (existente, **rediseñada**) | `PublicLayout` (001) | ninguno |
+| `/parking/:id` | redirección `<Navigate to={`/?parqueadero=${id}`} replace/>` (`pages/public/ParkingDetail` se conserva en el repo, sin ruta) | — | ninguno |
 
-## Módulo `src/features/publico`
+## Datos y dominio
 
-```ts
-// publicoService.ts
-export function listarParqueaderosPublicos(): Promise<Result<ParqueaderoPublico[], 'RED'>>;
-
-// domain.ts (puro, probado)
-export function googleMapsUrl(lat: number, lng: number): string;
-//   → `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}` (punto decimal, máx. 6 decimales)
-export function coordenadasValidas(lat: unknown, lng: unknown): boolean;   // números finitos en rango
-export function estaLleno(p: ParqueaderoPublico): boolean;                 // todas las ofertas con celdas_disponibles === 0
-export function resumenDisponibilidad(p: ParqueaderoPublico): string;      // "Automóviles 12/20 · Motocicletas 8/15"
-export function ordenarPorNombre(ps: ParqueaderoPublico[]): ParqueaderoPublico[]; // localeCompare 'es'
-```
+Ver [public-view.md](./public-view.md): `listPublicParkings()` en `src/services/parkings.ts` y las funciones
+puras de `src/domain/publicParking.ts` (`toPublicParking`, `googleMapsUrl`, `hasValidCoordinates`, `isFull`,
+`availabilitySummary` y `sortByName`).
 
 ### Extensión de `MSG`
 
@@ -42,27 +34,27 @@ publico: {
 
 ## Componentes
 
-### `MapaParqueaderosPage`
+### `pages/public/Home` (rediseño de la página existente)
 
-- Estado: `{ estado: 'cargando' | 'error' | 'listo', parqueaderos: ParqueaderoPublico[] }`. Carga al montar.
-- `seleccionadoId = searchParams.get('parqueadero')`; `seleccionado = parqueaderos.find(...)`.
-- Si `estado === 'listo'` y hay `seleccionadoId` sin coincidencia → `Alert` warning `MSG.publico.noDisponible`
+- Estado: `{ estado: 'cargando' | 'error' | 'listo', parkings: PublicParking[] }`. Carga al montar.
+- `selectedId = searchParams.get('parqueadero')`; `selected = parkings.find(...)`.
+- Si `estado === 'listo'` y hay `selectedId` sin coincidencia → `Alert` warning `MSG.publico.noDisponible`
   y se limpia el parámetro (`replace`).
-- Layout según `research.md` §R6: título y subtítulo; `ParqueaderosMap`; columna derecha (desktop) con
-  `ParqueaderosList` o `ParqueaderoDetalle`.
+- Layout según `research.md` §R6: título y subtítulo; `ParkingMap`; columna derecha (desktop) con
+  `ParkingList` o `ParkingDetailPanel`.
 - Esc con un detalle abierto → cerrar.
 
-### `ParqueaderosMap` (props: `parqueaderos`, `seleccionadoId`, `onSelect(id)`)
+### `components/map/ParkingMap` (existente, rediseñado; props: `parkings`, `selectedId`, `onSelect(id)`)
 
-- `MapBase` + un `Marker` por parqueadero con el ícono `disponible`, `lleno` o `seleccionado`; `eventHandlers.click`
+- `MapBase` (002) + un `ParkingMarker` (existente, rediseñado) por parqueadero con el ícono `disponible`, `lleno` o `seleccionado`; `eventHandlers.click`
   llama a `onSelect`; `keyboard: true`; `title` = nombre (accesible).
 - `Tooltip` permanente sobre el seleccionado: nombre (negrita) y dirección.
 - `fitBounds` al cargar y `flyTo` al cambiar la selección (componente interno con `useMap`).
-- `MapLegend`, abajo a la izquierda: pin verde `MSG.publico.leyendaDisponible` y pin gris
+- `components/public/MapLegend`, abajo a la izquierda: pin verde `MSG.publico.leyendaDisponible` y pin gris
   `MSG.publico.leyendaLleno`.
 - `aria-label="Mapa de parqueaderos de Medellín"`.
 
-### `ParqueaderosList` (props: `parqueaderos`, `seleccionadoId`, `onSelect`)
+### `components/public/ParkingList` (nuevo; props: `parkings`, `selectedId`, `onSelect`)
 
 - Encabezado con el ícono `Car` y `MSG.publico.listaTitulo(n)`.
 - `<ul>` con scroll; cada `<li>` es un `<button>` con el pin (verde o gris), el nombre, un punto verde y la
@@ -71,7 +63,7 @@ publico: {
   seleccionado.
 - Vacío: `MSG.publico.vacio`.
 
-### `ParqueaderoDetalle` (props: `parqueadero`, `onClose`)
+### `components/public/ParkingDetailPanel` (nuevo; reutiliza el contenido de `ParkingDetail`; props: `parking`, `onClose`)
 
 Fiel a `docs/prototipos/HU10-detalle-parqueadero.jpg`:
 
@@ -79,12 +71,12 @@ Fiel a `docs/prototipos/HU10-detalle-parqueadero.jpg`:
    (`aria-label="Cerrar detalle"`). **Sin** badge "Activo" (todos los visibles lo son).
 2. Fila "Dirección" (`MapPin`) y, a la derecha, el botón outline "Cómo llegar" (`Navigation` o `Map`), que es
    un `<a href={googleMapsUrl(...)} target="_blank" rel="noopener noreferrer">` y solo se renderiza si
-   `coordenadasValidas`.
+   `hasValidCoordinates`.
 3. "Horario de atención" (`Clock`) | "Información de contacto" (`Phone` teléfono; `Mail` correo solo si existe).
    El teléfono es un enlace `tel:`.
 4. "Disponibilidad actual de celdas" (`BarChart3`): tarjeta por oferta con ícono, nombre plural, número
    grande de disponibles (verde, o gris si es 0), "celdas disponibles" y "capacidad total".
-5. "Tarifas configuradas" (`CircleDollarSign`): por oferta, el nombre plural, `formatCOP(tarifa_hora)` y
+5. "Tarifas configuradas" (`CircleDollarSign`): por oferta, el nombre plural, `formatCOP(hourly_rate)` y
    "por hora".
 6. `Alert` info con `MSG.publico.notaUltimoEstado`.
 

@@ -18,8 +18,9 @@ el administrador**; no hay actualización en tiempo real.
 Un parqueadero es **publicable** si está en estado Activo y la suma de sus capacidades por tipo es mayor a 0
 (regla definida en la feature 002).
 
-**Dependencias**: feature 002 (datos de parqueaderos y ofertas por tipo); feature 001 (layout público con
-"Acceso administradores").
+**Dependencias**: el **back existente** (sin cambios), que ya publica los parqueaderos publicables mediante
+la vista `public_parking_lots` (`docs/supabase-esquema-actual.md`); la feature 002 (los administradores
+mantienen los datos); la feature 001 (layout público con "Acceso administradores").
 
 ## Clarifications
 
@@ -31,6 +32,8 @@ Un parqueadero es **publicable** si está en estado Activo y la suma de sus capa
 - Q: ¿Se muestran los parqueaderos publicados que no tienen celdas disponibles en este momento (llenos)? → A: sí (HU9 solo exige Activo y capacidad > 0). Se distinguen con un marcador gris y la etiqueta "Sin celdas disponibles".
 - Q: ¿El encabezado público muestra "Usuario / Cerrar sesión" como en el prototipo? → A: no. El Usuario es anónimo; el encabezado muestra el logo y el enlace "Acceso administradores".
 - Q: ¿El detalle seleccionado se puede compartir o abrir por enlace? → A: sí. La selección se refleja en la dirección de la página (`/?parqueadero=<id>`) y "Atrás" cierra el detalle. Si el parqueadero ya no está publicado, se muestra "Este parqueadero ya no está disponible."
+- Q: ¿De dónde salen los datos públicos? → A: de la vista existente del back (sin cambios), que ya aplica la regla de publicabilidad. Se reutilizan el servicio y los componentes de mapa del repo, rediseñados según los prototipos.
+- Q: ¿Qué pasa con la página de detalle existente `/parking/:id`? → A: se reemplaza por el panel de detalle; esa URL redirige a `/?parqueadero=:id` para no romper enlaces ya publicados.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -144,6 +147,7 @@ Maps con el destino en las coordenadas de ese parqueadero.
 
 - **FR-016**: La información mostrada MUST ser la última guardada al momento de cargar la página; no hay actualización automática en tiempo real.
 - **FR-017**: La interfaz MUST estar en español, mostrar tarifas en pesos colombianos ("$ 5.000") y ser utilizable desde 360 px de ancho.
+- **FR-018**: La dirección antigua del detalle (`/parking/<id>`) MUST redirigir a `/?parqueadero=<id>`.
 
 ### Key Entities
 
@@ -173,6 +177,7 @@ Maps con el destino en las coordenadas de ese parqueadero.
 ## Assumptions
 
 - La cantidad de parqueaderos publicados es baja (≤ 50), así que se cargan todos de una vez al abrir la página.
+- El back ya expone solo los parqueaderos publicables y sus columnas públicas; esta feature no requiere cambios en la BD.
 - El Usuario puede no conceder su ubicación; MedaPark no la solicita (Google Maps la gestiona al calcular la ruta).
 - El enlace de Google Maps usa las coordenadas (más precisas que la dirección de texto).
 - No hay analítica ni registro de consultas de Usuarios.

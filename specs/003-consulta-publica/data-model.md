@@ -1,42 +1,43 @@
 # Data Model: Consulta Pública (003)
 
-Esta feature **no crea tablas**. Lee las de la 002 mediante una función de solo lectura.
+Esta feature **no crea ni modifica nada en el back**. Lee la vista existente `public.public_parking_lots`
+(`docs/supabase-esquema-actual.md` §1) y la mapea al dominio `PublicParking`
+([contracts/public-view.md](./contracts/public-view.md)).
 
-## Vista lógica `ParqueaderoPublico`
+## Vista lógica `PublicParking`
 
-Origen: `public.listar_parqueaderos_publicos()` ([contracts/public-rpc.md](./contracts/public-rpc.md)).
+| Campo | Origen (vista) | Notas |
+|-------|----------------|-------|
+| `id` | `id` | Se usa en `?parqueadero=` |
+| `name`, `address`, `phone`, `opening_hours` | mismas columnas | |
+| `contact_email` | `contact_email` | puede ser `null` |
+| `latitude`, `longitude` | mismas columnas | posición del marcador y destino de Google Maps |
+| `offers[]` | `car_*` y `motorcycle_*` | una oferta por tipo cuyo `*_total_spaces` no es `null` |
+| `offers[].vehicle_type` | `'CAR'` \| `'MOTORCYCLE'` | |
+| `offers[].hourly_rate` | `*_hourly_rate` | COP enteros |
+| `offers[].total_spaces` | `*_total_spaces` | puede ser 0 si el otro tipo tiene capacidad |
+| `offers[].available_spaces` | `*_available_spaces` | calculado por la vista |
 
-| Campo | Origen | Notas |
-|-------|--------|-------|
-| `id` | `parqueaderos.id` | Se usa en `?parqueadero=` |
-| `nombre`, `direccion`, `telefono`, `correo_contacto`, `horario_atencion` | `parqueaderos` | `correo_contacto` puede ser `null` |
-| `latitud`, `longitud` | `parqueaderos` | Posición del marcador y destino de Google Maps |
-| `ofertas[]` | `ofertas_vehiculo` | Una por tipo atendido |
-| `ofertas[].tipo` | | `automovil` \| `motocicleta` |
-| `ofertas[].tarifa_hora` | | COP enteros |
-| `ofertas[].capacidad_total` | | |
-| `ofertas[].celdas_disponibles` | `capacidad_total − celdas_ocupadas` | Calculado en el servidor |
+**Excluidos por la vista**: `admin_id`, `status` (siempre activo), `created_at` y `updated_at`.
+`*_occupied_spaces` existe en la vista pero el front no lo muestra (HU10 pide disponibles y capacidad).
 
-**Campos excluidos a propósito**: `admin_id`, `estado` (siempre activo), `celdas_ocupadas` (se publica solo
-el número de disponibles), `created_at` y `updated_at`.
-
-## Regla de inclusión (publicabilidad)
+## Regla de inclusión (la aplica la vista)
 
 ```text
-incluido(p) ⇔ p.estado = 'activo' ∧ Σ capacidad_total(p) > 0
+incluido(p) ⇔ p.status = true ∧ (car.total_spaces > 0 ∨ moto.total_spaces > 0)
 ```
 
 ## Estados derivados en la UI
 
 | Estado | Condición | Marcador | Lista |
 |--------|-----------|----------|-------|
-| Con disponibilidad | ∃ oferta con `celdas_disponibles > 0` | verde | normal |
-| Lleno | ∀ ofertas `celdas_disponibles = 0` | gris | badge "Sin celdas disponibles" |
-| Seleccionado | `id === ?parqueadero` | azul y más grande, con tooltip | fondo resaltado |
+| Con disponibilidad | ∃ oferta con `available_spaces > 0` | verde | normal |
+| Lleno | ∀ ofertas `available_spaces = 0` | gris | badge "Sin celdas disponibles" |
+| Seleccionado | `id === ?parqueadero` | azul, más grande, con tooltip | fondo resaltado |
 
 ## Estado de la página
 
 ```ts
-type EstadoCarga = 'cargando' | 'error' | 'listo';
+type LoadState = 'cargando' | 'error' | 'listo';
 // selección: URLSearchParams 'parqueadero' (string | null)
 ```

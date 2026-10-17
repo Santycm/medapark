@@ -1,27 +1,41 @@
-# Contrato: módulo de autenticación (`src/features/auth`)
+# Contrato: módulo de autenticación
 
-API interna de TypeScript que consumen las páginas. Todas las funciones de `authService` **nunca lanzan
-excepciones**: devuelven `Result<T>`, con el mensaje ya traducido para el usuario.
+## `src/services/auth.ts` (migrado desde `auth.js`)
+
+### Funciones existentes: se conservan con la misma firma (lanzan excepciones)
+
+Las usan las páginas latentes (`Profile`, `SetupMfa`, `ForgotPassword`, `UpdatePassword`). Solo se agregan
+tipos.
 
 ```ts
-// src/features/auth/authService.ts
-export type Result<T> =
-  | { ok: true; data: T }
-  | { ok: false; code: AuthErrorCode; message: string };
+export function login(email: string, password: string):
+  Promise<{ user: User; session: Session; requiresMfa: boolean }>;
+export function logout(): Promise<void>;                       // signOut() (scope global, comportamiento actual)
+export function getCurrentUser(): Promise<User | null>;
+export function getSession(): Promise<Session | null>;
+export function getAuthenticatorAssuranceLevel(): Promise<{ currentLevel: 'aal1' | 'aal2' | null; nextLevel: 'aal1' | 'aal2' | null }>;
+export function getMfaFactors(): Promise<{ all: Factor[]; totp: Factor[] }>;
+export function getVerifiedTotpFactor(): Promise<Factor | null>;
+export function createMfaChallenge(factorId: string): Promise<{ id: string }>;
+export function verifyMfa(factorId: string, challengeId: string, code: string): Promise<void>;
+export function enrollMfa(): Promise<{ id: string; totp: { qr_code: string; secret: string; uri: string } }>;
+export function unenrollMfa(factorId: string): Promise<void>;
+export function resetPassword(email: string): Promise<void>;
+export function updatePassword(password: string): Promise<void>;
+```
 
-export type AuthErrorCode =
-  | 'credenciales_invalidas'   // invalid_credentials | user_banned | email_not_confirmed
-  | 'codigo_incorrecto'        // mfa_verification_failed
-  | 'codigo_expirado'          // mfa_challenge_expired
-  | 'factor_no_encontrado'     // mfa_factor_not_found
-  | 'limite_frecuencia'        // over_request_rate_limit
-  | 'sesion_invalida'          // session_expired | session_not_found | refresh_token_not_found | 401
-  | 'red';                     // fetch failed / desconocido
+### Funciones nuevas para el MVP: no lanzan, devuelven `Result` con el mensaje ya traducido
 
-/** HU1: primer factor. */
-export function signInWithPassword(email: string, password: string): Promise<Result<{ userId: string }>>;
+Se implementan **reutilizando** las existentes (envolviéndolas en try/catch con `toAuthErrorCode`).
 
-/** Lee el estado de la sesión: getUser() + getAuthenticatorAssuranceLevel() + listFactors(). */
+```ts
+import type { Result } from '../lib/result';
+import type { AuthErrorCode } from '../lib/errors';
+
+/** HU1: trim + toLowerCase del correo y luego login(). */
+export function signInAdmin(email: string, password: string): Promise<Result<{ userId: string }, AuthErrorCode>>;
+
+/** Estado actual: getCurrentUser + getAuthenticatorAssuranceLevel + getVerifiedTotpFactor. Nunca lanza (sin sesión → hasSession false). */
 export function getAuthSnapshot(): Promise<{
   hasSession: boolean;
   user: { id: string; email: string } | null;
@@ -29,44 +43,55 @@ export function getAuthSnapshot(): Promise<{
   verifiedTotpFactorId: string | null;
 }>;
 
-/** HU2 (enrolamiento): elimina los factores TOTP unverified y crea uno nuevo. */
-export function startTotpEnrollment(): Promise<Result<{
-  factorId: string;
-  qrCodeSvg: string;   // data URI para <img src>
-  secret: string;      // para ingreso manual
-}>>;
+/** HU2 (enrolamiento): unenroll de los factores TOTP 'unverified' (getMfaFactors().all) y luego enrollMfa(). */
+export function startTotpEnrollment(): Promise<Result<{ factorId: string; qrCodeSvg: string; secret: string }, AuthErrorCode>>;
 
-/** HU2: crea un challenge para el factor. */
-export function createChallenge(factorId: string): Promise<Result<{ challengeId: string }>>;
+/** HU2: createMfaChallenge envuelto. */
+export function createChallenge(factorId: string): Promise<Result<{ challengeId: string }, AuthErrorCode>>;
 
-/** HU2: verifica el código (lo usan tanto el enrolamiento como el login). */
-export function verifyCode(factorId: string, challengeId: string, code: string): Promise<Result<void>>;
+/** HU2: verifyMfa envuelto (distingue codigo_incorrecto y codigo_expirado). */
+export function verifyCode(factorId: string, challengeId: string, code: string): Promise<Result<void, AuthErrorCode>>;
 
-/** HU8 y cancelación: signOut({ scope: 'local' }). Nunca falla hacia la UI (si hay un error de red, limpia la sesión local igualmente). */
-export function signOut(): Promise<void>;
+/** HU8 y cancelación: signOut({ scope: 'local' }). Nunca falla hacia la UI. */
+export function signOutLocal(): Promise<void>;
 ```
 
-```ts
-// src/features/auth/authStage.ts
-export function resolveAuthStage(input: {
-  hasSession: boolean;
-  currentLevel: 'aal1' | 'aal2' | null;
-  verifiedTotpCount: number;
-}): Exclude<AuthStage, 'cargando'>;
-```
+## Tipos y utilidades
 
 ```ts
-// src/features/auth/mfaAttempts.ts
+// src/lib/result.ts
+export type Result<T, C extends string = string> =
+  | { ok: true; data: T }
+  | { ok: false; code: C; message: string };
+
+// src/lib/errors.ts
+export type AuthErrorCode =
+  | 'credenciales_invalidas' | 'codigo_incorrecto' | 'codigo_expirado' | 'factor_no_encontrado'
+  | 'limite_frecuencia' | 'sesion_invalida' | 'permiso_denegado' | 'red';
+export function toAuthErrorCode(error: unknown): AuthErrorCode;   // tabla de research.md §R3
+export function toUserMessage(code: AuthErrorCode): string;
+export function isSessionError(error: unknown): boolean;
+
+// src/domain/authStage.ts
+export type AuthStage = 'cargando' | 'anonimo' | 'requiere_enrolamiento' | 'requiere_verificacion' | 'autenticado';
+export function resolveAuthStage(i: { hasSession: boolean; currentLevel: 'aal1' | 'aal2' | null; verifiedTotpCount: number }):
+  Exclude<AuthStage, 'cargando'>;
+
+// src/domain/mfaAttempts.ts
 export const MAX_MFA_ATTEMPTS = 5;
 export function getFailures(userId: string): number;
-export function registerFailure(userId: string): number; // devuelve el total tras incrementar
+export function registerFailure(userId: string): number;
 export function resetFailures(userId: string): void;
-```
 
-```ts
-// src/lib/errors.ts
-export function toAuthErrorCode(error: unknown): AuthErrorCode;
-export function toUserMessage(code: AuthErrorCode): string;
+// src/context/AuthProvider.tsx + src/hooks/useAuth.ts
+export type AuthContextValue = {
+  stage: AuthStage;
+  user: { id: string; email: string } | null;
+  refresh: () => Promise<AuthStage>;
+  signOut: () => Promise<void>;   // signOutLocal + resetFailures
+};
+export const AuthContext: React.Context<AuthContextValue | null>;
+export function handleSessionError(error: unknown): Promise<boolean>; // true si era de sesión y se cerró
 ```
 
 ## Catálogo de mensajes (`src/lib/messages.ts`)
@@ -94,29 +119,27 @@ export const MSG = {
   general: {
     red: 'No fue posible conectar con el servidor. Intenta nuevamente.',
     limiteFrecuencia: 'Demasiados intentos. Espera unos minutos e intenta nuevamente.',
+    permisoDenegado: 'No tienes permisos para realizar esta acción. Contacta al administrador del sistema.',
     noEncontrada: 'Página no encontrada',
   },
 } as const;
 ```
 
-Las features 002 y 003 **extienden** `MSG` con sus propias secciones (`parqueadero`, `celdas`, `ocupacion`,
-`publico`).
+Las features 002 y 003 extienden `MSG`.
 
-## Textos de UI (no son mensajes de error)
+## Textos de UI
 
 | Pantalla | Elemento | Texto |
 |----------|----------|-------|
 | Login | Título | Iniciar sesión |
 | Login | Placeholders | `usuario@dominio` · `Ingresa tu contraseña` |
-| Login | Botón | Ingresar |
+| Login | Botón | Ingresar (sin "¿Olvidaste tu contraseña?") |
 | Enrolamiento | Título | Configurar verificación en dos pasos |
 | Enrolamiento | Pasos | 1. Instala una app autenticadora (Google Authenticator, Microsoft Authenticator o similar). 2. Escanea el código QR. 3. Ingresa el código de 6 dígitos que muestra la app. |
-| Enrolamiento | Clave manual | ¿No puedes escanear? Ingresa esta clave: `<secret>` (con botón "Copiar") |
-| Verificación | Título | Verificación en dos pasos |
-| Verificación | Subtítulo | Ingresa el código de 6 dígitos de tu app autenticadora. |
-| Verificación y enrolamiento | Campo | Código de verificación * |
-| Verificación y enrolamiento | Botones | Verificar código · Volver al inicio de sesión |
-| Verificación y enrolamiento | Indicador de pasos | ✓ Credenciales verificadas → 2 Verificación MFA |
+| Enrolamiento | Clave manual | ¿No puedes escanear? Ingresa esta clave: `<secret>` (botón "Copiar") |
+| Verificación | Título / subtítulo | Verificación en dos pasos / Ingresa el código de 6 dígitos de tu app autenticadora. |
+| Ambas MFA | Campo y botones | Código de verificación * · Verificar código · Volver al inicio de sesión |
+| Ambas MFA | Indicador de pasos | ✓ Credenciales verificadas → 2 Verificación MFA |
 | Header admin | | Logo · `<correo>` · Cerrar sesión |
 | Sidebar admin | | Mi parqueadero |
 | Header público | | Logo · Acceso administradores |
