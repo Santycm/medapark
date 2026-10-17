@@ -1,29 +1,33 @@
 # Quickstart: Autenticación del Administrador (001)
 
-Guía para levantar el proyecto y validar de forma manual cada user story. Las pruebas automatizadas se
-ejecutan con `npm test` y `npx supabase test db --linked`.
+Guía para levantar el proyecto y validar cada user story. Las pruebas automatizadas se ejecutan con
+`npm test` (Vitest, con Supabase simulado). **No** se ejecuta nada contra el Supabase remoto salvo el uso
+normal de la app y `gen types` (solo lectura).
 
-## 0. Prerrequisitos (una vez)
+## 0. Prerrequisitos
 
 1. Node.js 22 LTS y npm.
-2. Proyecto en Supabase Cloud configurado según `research.md` §R12:
-   - Registro público **deshabilitado**.
-   - MFA TOTP **habilitado**.
-   - Dos usuarios de prueba creados con "Auto Confirm User":
-     - `admin1@medapark.test` (sin factor MFA, para probar el enrolamiento)
-     - `admin2@medapark.test` (se enrola en el paso US2-A y se reutiliza)
-     - Las contraseñas las define el equipo y **no** se versionan.
-3. Una app autenticadora en el teléfono (Google Authenticator, Microsoft Authenticator o similar).
+2. Archivo `.env` (no versionado) con los mismos valores que usa Netlify:
+   `VITE_SUPABASE_URL=https://msmfidnqmqntxbcucnsf.supabase.co` y `VITE_SUPABASE_ANON_KEY=<anon key>`.
+3. **Checklist del back (la verifica el equipo que administra Supabase; los agentes no la modifican)**:
+   - [ ] Registro público deshabilitado (*Allow new users to sign up = OFF*).
+   - [ ] MFA TOTP habilitado.
+   - [ ] Site URL y Redirect URLs con `http://localhost:5173` y la URL de Netlify.
+   - [ ] Dos cuentas de prueba: `admin1` **sin** factor MFA (para probar el enrolamiento) y `admin2`. Las
+         contraseñas no se versionan.
+4. Una app autenticadora en el teléfono (Google Authenticator, Microsoft Authenticator o similar).
 
 ## 1. Configuración local
 
 ```bash
 npm install
-cp .env.example .env.local      # completar VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY
-npx supabase login
-npx supabase link --project-ref <project-ref>
-npx supabase db push            # aplica supabase/migrations
 npm run dev                     # http://localhost:5173
+```
+
+Opcional, para regenerar los tipos (solo lectura; requiere `npx supabase login`):
+
+```bash
+npx supabase gen types typescript --project-id msmfidnqmqntxbcucnsf > src/lib/database.types.ts
 ```
 
 ## 2. Verificación automatizada
@@ -31,65 +35,72 @@ npm run dev                     # http://localhost:5173
 ```bash
 npm run lint
 npm run typecheck
-npm test                        # Vitest
-npx supabase test db --linked   # pgTAP (001_auth_helpers.test.sql)
+npm test
+npm run build
 ```
 
 Esperado: todo en verde.
 
-## 3. Validación manual por user story
+## 3. Validación de la migración a TypeScript (Fase 1, antes de rediseñar)
+
+| # | Paso | Esperado |
+|---|------|----------|
+| 1 | `npm run build` | Sin errores de TypeScript |
+| 2 | Abrir `/` | El mapa del repo funciona igual que antes (marcadores y popup) |
+| 3 | Abrir `/parking/<id>` desde un popup | Se ve el detalle como antes |
+| 4 | Abrir `/login` e iniciar sesión con una cuenta con MFA | El flujo anterior sigue funcionando (aún sin rediseño) |
+
+## 4. Validación manual por user story
 
 ### US1: Iniciar sesión (HU1)
 
-| # | Paso | Resultado esperado |
-|---|------|--------------------|
-| 1 | Abrir `http://localhost:5173/` y pulsar "Acceso administradores" | Pantalla "Iniciar sesión" (sin "Registrarse" ni "¿Olvidaste…?") |
-| 2 | Pulsar "Ingresar" con los campos vacíos | Ambos campos en rojo, "El correo electrónico es obligatorio.", "La contraseña es obligatoria." y "Debe completar los campos requeridos" |
-| 3 | Correo `admin1@medapark` → salir del campo | "Verificar correo electrónico" |
-| 4 | Correo válido y contraseña errada → "Ingresar" | "El correo electrónico o la contraseña son incorrectos"; la contraseña se limpia |
-| 5 | Pulsar el ícono de ojo | La contraseña se muestra y se oculta |
-| 6 | `admin1` con la contraseña correcta | Va a `/admin/mfa/configurar` |
+| # | Paso | Esperado |
+|---|------|----------|
+| 1 | En `/`, pulsar "Acceso administradores" | Va a `/admin/login`: "Iniciar sesión", sin "Registrarse" ni "¿Olvidaste tu contraseña?" |
+| 2 | Abrir `/login` | Redirige a `/admin/login` |
+| 3 | "Ingresar" con los campos vacíos | "El correo electrónico es obligatorio.", "La contraseña es obligatoria." y "Debe completar los campos requeridos" |
+| 4 | Correo `admin1@medapark` → salir del campo | "Verificar correo electrónico" |
+| 5 | Correo válido con una contraseña errada | "El correo electrónico o la contraseña son incorrectos"; la contraseña se limpia |
+| 6 | Ícono de ojo | Muestra u oculta la contraseña |
+| 7 | `admin1` con la contraseña correcta | Va a `/admin/mfa/configurar` |
 
-### US2-A: Enrolamiento (HU2, primera vez)
+### US2-A: Enrolamiento obligatorio (HU2, primera vez)
 
-| # | Paso | Resultado esperado |
-|---|------|--------------------|
-| 1 | En `/admin/mfa/configurar` | Se ven el QR, la clave manual, el campo de 6 dígitos y "Verificar código" deshabilitado |
-| 2 | Escribir `123456` (incorrecto) → "Verificar código" | "El código de verificación es incorrecto" |
-| 3 | Escanear el QR con la app e ingresar el código vigente | Llega a `/admin` (panel placeholder) con el correo en el encabezado |
+| # | Paso | Esperado |
+|---|------|----------|
+| 1 | En `/admin/mfa/configurar` | QR, clave manual, campo de 6 dígitos y "Verificar código" deshabilitado |
+| 2 | Código `123456` | "El código de verificación es incorrecto" |
+| 3 | Escanear e ingresar el código vigente | Llega a `/admin` con el correo en el encabezado |
 
-### US2-B: Verificación (HU2, ingresos siguientes)
+### US2-B: Verificación (HU2)
 
-| # | Paso | Resultado esperado |
-|---|------|--------------------|
-| 1 | Cerrar sesión y entrar de nuevo con `admin1` | Va a `/admin/mfa/verificar` (no al QR) |
-| 2 | En otra pestaña abrir `http://localhost:5173/admin` | Redirige a `/admin/mfa/verificar` |
-| 3 | Recargar la página (F5) | Permanece en `/admin/mfa/verificar` |
-| 4 | Ingresar un código incorrecto 4 veces | Cada vez: "El código de verificación es incorrecto" |
-| 5 | 5.º código incorrecto | Vuelve a "Iniciar sesión" con "Demasiados intentos fallidos. Inicia sesión nuevamente." |
-| 6 | Entrar de nuevo, dejar la pantalla abierta más de 5 minutos e ingresar el código actual | "El código de verificación ha expirado. Solicita uno nuevo." Al ingresar el código vigente de nuevo, entra |
-| 7 | "Volver al inicio de sesión" | Vuelve a login; abrir `/admin` redirige a login |
-| 8 | Ingresar el código vigente | Llega a `/admin` |
+| # | Paso | Esperado |
+|---|------|----------|
+| 1 | Cerrar sesión y entrar con `admin1` | Va a `/admin/mfa/verificar` |
+| 2 | En otra pestaña abrir `/admin` | Redirige a `/admin/mfa/verificar` |
+| 3 | Abrir `/verify-mfa` | Redirige a `/admin/mfa/verificar` |
+| 4 | F5 | Permanece en la verificación |
+| 5 | 4 códigos incorrectos | Cada uno: "El código de verificación es incorrecto" |
+| 6 | 5.º incorrecto | Vuelve a login con "Demasiados intentos fallidos. Inicia sesión nuevamente." |
+| 7 | Entrar, esperar más de 5 minutos e ingresar el código actual | "El código de verificación ha expirado. Solicita uno nuevo."; con el código vigente siguiente, entra |
+| 8 | "Volver al inicio de sesión" | Vuelve a login; `/admin` redirige a login |
 
 ### US3: Cerrar sesión y protección (HU8)
 
-| # | Paso | Resultado esperado |
-|---|------|--------------------|
-| 1 | En `/admin`, pulsar "Cerrar sesión" en el encabezado | Modal "¿Estás seguro de que deseas cerrar tu sesión?" |
-| 2 | "Cancelar" (y también probar Esc) | El modal se cierra y la sesión sigue |
-| 3 | Abrir `/admin` en una segunda pestaña. En la primera, "Cerrar sesión" → confirmar | La primera va a login; la segunda, al navegar o recargar, también |
-| 4 | Pulsar "Atrás" en el navegador | No se muestra el panel; redirige a login |
+| # | Paso | Esperado |
+|---|------|----------|
+| 1 | En `/admin` → "Cerrar sesión" | Modal "¿Estás seguro de que deseas cerrar tu sesión?" |
+| 2 | "Cancelar" y Esc | Cierra el modal; la sesión sigue |
+| 3 | Dos pestañas: cerrar sesión en una | La otra, al navegar, termina en login |
+| 4 | "Atrás" tras cerrar sesión | No muestra el panel |
 | 5 | Con sesión completa, abrir `/admin/login` | Redirige a `/admin` |
-| 6 | Abrir `/admin/no-existe` con sesión completa | "Página no encontrada" con enlace al panel |
+| 6 | `/admin/no-existe` | "Página no encontrada" con enlace al panel |
 
-### Seguridad en el servidor (FR-018)
+### Rutas latentes (FR-032)
 
-Con `admin1` en estado `aal1` (después del login, antes del código), ejecutar en la consola del navegador:
-
-```js
-const { data } = await window.__supabase.auth.getSession();
-JSON.parse(atob(data.session.access_token.split('.')[1])).aal   // → "aal1"
-```
-
-(`window.__supabase` solo se expone cuando `import.meta.env.DEV` es true.) La prueba de que las tablas
-rechazan `aal1` se hace en la feature 002.
+| # | Paso | Esperado |
+|---|------|----------|
+| 1 | Revisar Login, MFA, panel y encabezados | Ningún enlace a `/forgot-password`, `/update-password`, `/profile` o `/setup-mfa` |
+| 2 | Sin sesión, abrir `/profile` | Redirige a `/admin/login` |
+| 3 | Con sesión completa, abrir `/profile` | Se ve la página existente (sin rediseño) |
+| 4 | Abrir `/forgot-password` | Se ve la página existente |

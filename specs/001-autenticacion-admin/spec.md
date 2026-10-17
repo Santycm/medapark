@@ -26,6 +26,8 @@ del panel (HU4) y las demás pantallas de gestión se especifican en `002-gestio
 - Q: ¿Qué mecanismo de segundo factor se usa (HU2)? → A: TOTP nativo de la plataforma de autenticación (app autenticadora), con enrolamiento por QR la primera vez. "Reenviar código" se reemplaza (ver *Desviaciones*).
 - Q: ¿Cuántos intentos fallidos consecutivos de código se permiten? → A: 5. Al 5.º fallo se cancela la autenticación pendiente y se vuelve a "Iniciar sesión" (FR-016), además del límite de frecuencia del servidor.
 - Q: ¿La sesión se cierra por inactividad? → A: No. La sesión solo termina con "Cerrar sesión" o al expirar o invalidarse según la plataforma (FR-023). No hay temporizador de inactividad.
+- Q: ¿Se reutiliza el código existente del repo `Santycm/medapark`? → A: sí. Se migra a TypeScript, se reutiliza la lógica de MFA existente (enrolar, desafiar, verificar) y se rediseñan las pantallas según esta spec y los prototipos. El MFA pasa de opcional a **obligatorio**.
+- Q: ¿Qué pasa con las pantallas existentes fuera del alcance (recuperar y cambiar contraseña, perfil, desactivar MFA)? → A: se conservan sin enlaces desde la interfaz del MVP (rutas latentes). La pantalla de inicio de sesión no muestra "¿Olvidaste tu contraseña?" (FR-006).
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -176,6 +178,8 @@ igual.
 
 - **FR-029**: Toda la interfaz MUST estar en español. Los errores inesperados muestran "No fue posible conectar con el servidor. Intenta nuevamente." sin detalles técnicos.
 - **FR-030**: Las pantallas MUST seguir la línea visual de los prototipos HU01, HU02 y HU08 y ser utilizables desde 360 px de ancho.
+- **FR-031**: Las rutas del sitio publicado antes de esta feature MUST seguir funcionando mediante redirección: `/login` → "Iniciar sesión" y `/verify-mfa` → "Verificación en dos pasos" (sujeta a las mismas reglas de acceso).
+- **FR-032**: Las pantallas existentes fuera del alcance del MVP (recuperar y cambiar contraseña, perfil, configuración y desactivación del MFA) MUST conservarse accesibles solo por URL directa, sin enlaces desde ninguna pantalla del MVP; las de perfil y MFA exigen sesión completa.
 
 ### Key Entities
 
@@ -204,6 +208,8 @@ igual.
 | HU2 | (no existe) | Pantalla nueva "Configurar verificación en dos pasos" (enrolamiento con QR) | Requisito técnico de TOTP la primera vez |
 | HU1 | "Debe indicar que se deben completar los campos requeridos" | Texto definido: "Debe completar los campos requeridos" | La HU no fija el texto |
 | HU8 | (no especifica confirmación) | Diálogo de confirmación según el prototipo HU08 | Prototipo |
+| HU1 | "No hay pantallas de registro, recuperación ni cambio de contraseña en el MVP" | Las pantallas existentes de recuperación y cambio de contraseña se conservan como rutas latentes, sin enlaces (FR-032) | Decisión del equipo: conservar código existente para usos futuros |
+| HU2 | "El MFA aplica a todas las cuentas" | La pantalla latente de perfil permite desactivar el MFA; como es obligatorio, el siguiente ingreso exige enrolarse de nuevo | Decisión del equipo (código existente) |
 
 ## Assumptions
 
@@ -213,3 +219,5 @@ igual.
 - El conteo de 5 intentos fallidos se lleva por autenticación pendiente en el navegador y se complementa con el límite de frecuencia del servidor. Para un MVP académico se considera suficiente.
 - El enlace "Acceso administradores" del área pública es una adición mínima necesaria para llegar a la pantalla de login. No hay HU que lo prohíba.
 - La HU1 exige que la validación se conecte al servicio de autenticación de la plataforma de backend elegida (Supabase Auth). Esto se concreta en el plan.
+- La base de datos real ya exige el segundo factor para leer y modificar datos de parqueaderos (`docs/supabase-esquema-actual.md`). Esta feature no requiere cambios de base de datos.
+- La configuración del proyecto de autenticación (registro público deshabilitado, TOTP habilitado) la verifica el equipo (checklist en `quickstart.md`); los agentes no la modifican.

@@ -32,16 +32,19 @@ Dependencias: 002 depende de 001 (sesión aal2). 003 depende del esquema de 002 
 
 ## 3. Decisiones de stack (tomadas con el equipo)
 
+> Actualizado el 2026-10-17 tras integrar el repo existente `github.com/Santycm/medapark` (ver §11 y §12).
+
 | Tema | Decisión |
 |------|----------|
-| Frontend | Vite + React 18 + TypeScript (strict) + Tailwind CSS + React Router + React Hook Form + Zod |
-| Backend | Supabase **en la nube** (plan free): Auth, PostgreSQL, RLS y RPC. Migraciones versionadas en `supabase/migrations` con la CLI de Supabase |
-| MFA | **TOTP nativo de Supabase Auth** (app autenticadora). Ver §5 |
-| Mapas | Leaflet + OpenStreetMap (`react-leaflet`), sin API key |
+| Base de código | Repo existente `Santycm/medapark` (Vite + React + JS), **migrado a TypeScript** como primera tarea de la 001 |
+| Frontend | Vite 8 + React 19 + TypeScript (strict) + Tailwind CSS 4 + `react-router` 8 + React Hook Form + Zod + `lucide-react` |
+| Backend | **Externo, sin cambios**: Supabase en la nube, proyecto `Medapark` (`msmfidnqmqntxbcucnsf`), administrado por otras personas. Esquema real en `docs/supabase-esquema-actual.md`. Este proyecto es solo front: sin migraciones ni SQL |
+| MFA | TOTP nativo de Supabase Auth, **reutilizando los servicios de MFA del repo** (`enrollMfa`, `createMfaChallenge`, `verifyMfa`, `getVerifiedTotpFactor`). Se vuelve **obligatorio**. Ver §5 |
+| Mapas | Leaflet 1.9 + `react-leaflet` 5 (ya en el repo), con mosaicos CARTO/OSM y sin API key |
 | Ruta | Enlace `https://www.google.com/maps/dir/?api=1&destination=<lat>,<lng>` (sin API de Google) |
-| Pruebas | Vitest + Testing Library (validaciones, reglas de negocio y algunos componentes) y pgTAP para RLS/RPC |
-| Despliegue | Netlify (opcional, al final). El código se versiona en `github.com/manuruizb/medapark-app` (privado) |
-| Mocks | Pencil (MCP) a partir de `docs/prototipos/*.jpg`. Se realizan en otra sesión antes de implementar la UI |
+| Pruebas | Vitest + Testing Library (cliente Supabase simulado) y validación manual con los `quickstart.md` |
+| Despliegue | Netlify publica `main` automáticamente. Gitflow: `develop` + `feature/NNN-nombre` |
+| Mocks | Pencil (MCP) a partir de `docs/prototipos/*.jpg` y los logos de `docs/assets/logos/` y `public/img/`. Se hacen en otra sesión antes de implementar la UI |
 | Agente de implementación | Claude Code (las skills `/speckit-*` están en `.claude/skills`) |
 
 ## 4. Elementos de los prototipos: qué entra y qué no
@@ -122,7 +125,7 @@ Los mensajes que no aparecen en las HU (por ejemplo, demasiados intentos MFA o e
 
 | Ruta | Pantalla | HU | Acceso |
 |------|----------|----|--------|
-| `/` | Mapa de parqueaderos + lista lateral + panel de detalle | HU9, HU10, HU11 | Público |
+| `/` | Mapa de parqueaderos + lista lateral + panel de detalle (`?parqueadero=<id>`) | HU9, HU10, HU11 | Público |
 | `/admin/login` | Iniciar sesión | HU1 | Público (si ya hay sesión aal2, redirige a `/admin`) |
 | `/admin/mfa/configurar` | Configurar verificación en dos pasos (QR) | HU2 (desviación) | Sesión aal1 sin factor |
 | `/admin/mfa/verificar` | Verificación en dos pasos | HU2 | Sesión aal1 con factor |
@@ -132,6 +135,17 @@ Los mensajes que no aparecen en las HU (por ejemplo, demasiados intentos MFA o e
 | `/admin/parqueadero/celdas` | Configurar celdas | HU6 | aal2, con parqueadero |
 | `/admin/ocupacion` | Gestionar ocupación | HU7 | aal2, con parqueadero y capacidad > 0 |
 | (modal) | Confirmar cierre de sesión | HU8 | aal2 |
+
+**Redirecciones de las rutas del repo existente** (para no romper enlaces publicados en Netlify):
+
+| Ruta antigua | Redirige a |
+|--------------|------------|
+| `/login` | `/admin/login` |
+| `/verify-mfa` | `/admin/mfa/verificar` |
+| `/parking/:id` | `/?parqueadero=:id` |
+
+**Rutas latentes conservadas (fuera del MVP, sin enlaces desde la UI)**: `/forgot-password`,
+`/update-password`, `/profile` y `/setup-mfa` (estas dos últimas exigen aal2). Ver §11.
 
 ## 9. Fuera de alcance (MVP)
 
@@ -146,3 +160,31 @@ reservas.
 - Plan free de Supabase: el proyecto se pausa tras 7 días sin actividad. Hay que reactivarlo antes de la demo.
 - La disponibilidad depende de la disciplina del admin (no hay verificación automática).
 - Datos iniciales de la Alcaldía: **no se cargan datos de ejemplo** (decisión del clarify de 002). Para la demo, el equipo crea varias cuentas de administrador y registra sus parqueaderos desde la app.
+
+## 11. Repositorio existente (`Santycm/medapark`) y cómo se integra
+
+Estado al 2026-10-17 (rama `main`, publicada en Netlify): JS + React 19 + `react-router` 8 + Vite 8 +
+Tailwind 4 + Leaflet; sin pruebas; sin migraciones.
+
+| Elemento existente | Decisión |
+|--------------------|----------|
+| `src/services/auth.js` (login, MFA enroll/challenge/verify/unenroll, logout, recuperación) | **Se reutiliza**, migrado a `src/services/auth.ts`, y se extiende (Result tipado, mapeo de errores) |
+| `src/pages/auth/Login.jsx`, `VerifyMfa.jsx` y `SetupMfa.jsx` | Se migran a TS. Login y VerifyMfa se **rediseñan** según las specs y los prototipos. El enrolamiento obligatorio usa una página nueva `MfaEnrollPage` con la misma lógica de `SetupMfa`. `SetupMfa` (con "Desactivar MFA") se conserva como página latente |
+| `src/components/auth/ProtectedRoute.jsx` | Se reemplaza por guards basados en `AuthStage` (MFA **obligatorio**; hoy deja pasar sesiones sin factor) |
+| `ForgotPassword`, `UpdatePassword` y `Profile` | **Se conservan** (migrados a TS) como rutas latentes **sin enlaces** desde la UI del MVP (HU1 prohíbe la opción de recuperación en el login). Decisión del equipo: "pueden servir luego" |
+| `src/services/parkings.js` (vista `public_parking_lots`) | Se reutiliza en la 003 (`src/services/publicParkings.ts`) |
+| `src/pages/public/Home.jsx` y `ParkingDetail.jsx`, `components/map/*` | Se migran y **rediseñan** en la 003 (lista lateral + panel de detalle). `/parking/:id` redirige a `/?parqueadero=:id` |
+| `public/img/logo.svg`, `icon.svg` y `public/_redirects` | Se conservan |
+| Fuente Nunito/Poppins en `index.css` | Se reemplaza por los tokens de diseño de las specs (Inter). Si el equipo prefiere Nunito, solo cambia el token `--font-sans` |
+
+**Desviación aceptada**: las pantallas latentes permiten, técnicamente, recuperar y cambiar la contraseña y
+desactivar el MFA. Como el MFA es obligatorio, desactivarlo obliga a enrolarse de nuevo en el siguiente
+ingreso. No se enlazan desde la UI del MVP.
+
+## 12. Base de datos real (back externo)
+
+El back ya implementa el modelo: `parking_lots` (1 por admin, `status` booleano), `parking_vehicle_configs`
+(`CAR`/`MOTORCYCLE`, tarifa, capacidad y ocupadas con `CHECK`), RLS por dueño + `aal2`, la vista pública
+`public_parking_lots` con la regla de publicabilidad y las RPC atómicas de ingreso y salida. El front se
+adapta a él **sin cambios en la BD**. Ver `docs/supabase-esquema-actual.md` §3 (cómo lo usa el front) y §4
+(nota de permisos para el equipo del back).

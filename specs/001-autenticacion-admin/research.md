@@ -1,190 +1,143 @@
 # Research: Autenticación del Administrador (001)
 
-**Feature**: `001-autenticacion-admin` · **Fecha**: 2026-10-17
+**Feature**: `001-autenticacion-admin` · **Fecha**: 2026-10-17 (rev. integración con el repo `Santycm/medapark`)
 
-Cada decisión sigue el formato *Decision / Rationale / Alternatives considered*. No quedan
-`NEEDS CLARIFICATION` abiertos.
+Formato *Decision / Rationale / Alternatives considered*. No quedan `NEEDS CLARIFICATION`.
 
 ---
 
 ## R1. Proveedor de autenticación y primer factor
 
-- **Decision**: Supabase Auth con correo y contraseña (`supabase.auth.signInWithPassword`). Cuentas creadas
-  manualmente en *Dashboard → Authentication → Users → Add user* con "Auto Confirm User" activado.
-  **Registro público deshabilitado** (*Authentication → Sign In / Providers → Allow new users to sign up = OFF*).
-- **Rationale**: la HU1 exige Supabase Auth. Deshabilitar el registro impide que alguien cree cuentas
-  llamando a la API directamente, aunque la UI no ofrezca registro.
-- **Alternatives considered**: magic link (no cumple HU1) y un proveedor OAuth (fuera de alcance).
+- **Decision**: Supabase Auth con correo y contraseña, usando la función existente `login(email, password)`
+  de `src/services/auth` (`signInWithPassword`). Las cuentas las crean los administradores del back. El
+  registro público debe estar deshabilitado en el proyecto, cosa que verifica el equipo (no los agentes).
+- **Rationale**: lo exige la HU1, ya está implementado en el repo y no requiere cambios en el back.
+- **Alternatives considered**: magic link u OAuth (no cumplen la HU1).
 
-## R2. Segundo factor: TOTP nativo de Supabase
+## R2. Segundo factor: TOTP de Supabase, reutilizando el código del repo
 
-- **Decision**: MFA TOTP de Supabase (`supabase.auth.mfa.*`), habilitado en *Authentication → Multi-Factor →
-  TOTP*, que viene habilitado por defecto.
-  - Enrolamiento: `mfa.enroll({ factorType: 'totp', friendlyName: 'MedaPark', issuer: 'MedaPark' })` devuelve
-    `id`, `totp.qr_code` (SVG en *data URI*, se usa directo en `<img src>`), `totp.secret` y `totp.uri`.
-  - Verificación: `mfa.challenge({ factorId })` devuelve `challengeId`, y luego
-    `mfa.verify({ factorId, challengeId, code })`. Al verificar con éxito, la sesión sube a `aal2` y emite
-    `MFA_CHALLENGE_VERIFIED`.
-  - Estado: `mfa.getAuthenticatorAssuranceLevel()` devuelve `{ currentLevel, nextLevel }` y `mfa.listFactors()`
-    devuelve `{ all, totp }`. Se filtran los factores con `factor_type === 'totp' && status === 'verified'`
-    sobre `all` para no depender de la semántica de `totp`.
-  - Limpieza: antes de un enrolamiento nuevo, se eliminan con `mfa.unenroll({ factorId })` los factores TOTP
-    con `status === 'unverified'` (cumple FR-011 y evita el conflicto de `friendlyName`).
-- **Rationale**: decisión del equipo (ver `docs/analisis-mvp.md` §5). Gratis, sin proveedor de correo, y el
-  nivel `aal2` queda en el JWT, de modo que se puede exigir en el RLS (Principio II).
-- **Alternatives considered**: OTP por correo propio con Edge Function y Resend (fiel al prototipo, pero con
-  más piezas y otro proveedor) y SMS (de pago).
+- **Decision**: reutilizar las funciones existentes de `src/services/auth` (migradas a TS):
+  - `enrollMfa()` → `mfa.enroll({ factorType: 'totp', friendlyName: 'MedaPark' })` devuelve `id`,
+    `totp.qr_code` (SVG en *data URI*) y `totp.secret`;
+  - `createMfaChallenge(factorId)` → `{ id }`;
+  - `verifyMfa(factorId, challengeId, code)`;
+  - `getVerifiedTotpFactor()` → factor `verified` o `null`;
+  - `getMfaFactors()` / `unenrollMfa(factorId)` para limpiar los factores `unverified` antes de un nuevo
+    enrolamiento;
+  - `getAuthenticatorAssuranceLevel()` → `{ currentLevel, nextLevel }`.
+
+  Cambio de comportamiento: el MFA pasa de **opcional** (hoy `ProtectedRoute` deja pasar las sesiones `aal1`
+  sin factor) a **obligatorio**, mediante `resolveAuthStage` (R6) y los guards (R7).
+- **Rationale**: lo pidió el equipo ("usar el MFA que ya está implementado"). Es el mismo mecanismo TOTP
+  decidido en el wizard.
+- **Alternatives considered**: OTP por correo (requería un back propio) y SMS (de pago).
 
 ## R3. Códigos de error de Supabase Auth → mensajes de la spec
 
 | Código (`error.code`) | Dónde ocurre | Mensaje mostrado |
 |-----------------------|--------------|------------------|
-| `invalid_credentials` | `signInWithPassword` | El correo electrónico o la contraseña son incorrectos |
-| `user_banned` | `signInWithPassword` | El correo electrónico o la contraseña son incorrectos (no se revela el motivo) |
-| `email_not_confirmed` | `signInWithPassword` | El correo electrónico o la contraseña son incorrectos |
-| `mfa_verification_failed` | `mfa.verify` | El código de verificación es incorrecto (cuenta como fallo) |
-| `mfa_challenge_expired` | `mfa.verify` | El código de verificación ha expirado. Solicita uno nuevo. (**no** cuenta como fallo; se crea un challenge nuevo) |
-| `mfa_factor_not_found` | `mfa.challenge`/`verify` | Se cancela la sesión pendiente y se vuelve a login con el mensaje genérico |
+| `invalid_credentials` | `login` | El correo electrónico o la contraseña son incorrectos |
+| `user_banned`, `email_not_confirmed` | `login` | El correo electrónico o la contraseña son incorrectos (no se revela el motivo) |
+| `mfa_verification_failed` | `verifyMfa` | El código de verificación es incorrecto (cuenta como fallo) |
+| `mfa_challenge_expired` | `verifyMfa` | El código de verificación ha expirado. Solicita uno nuevo. (**no** cuenta como fallo; se crea otro challenge) |
+| `mfa_factor_not_found` | `createMfaChallenge`/`verifyMfa` | Se cancela la sesión pendiente y se vuelve a login con el mensaje genérico de red |
 | `over_request_rate_limit` | cualquiera | Demasiados intentos. Espera unos minutos e intenta nuevamente. |
-| `session_expired`, `session_not_found`, `refresh_token_not_found` | cualquiera | Se cierra la sesión local y se redirige a login (sin mensaje de error) |
+| `session_expired`, `session_not_found`, `refresh_token_not_found`, HTTP 401 | cualquiera | Cierre de la sesión local y redirección a login (sin mensaje) |
+| `42501` (PostgREST, permiso denegado) | datos (002/003) | No tienes permisos para realizar esta acción. Contacta al administrador del sistema. |
 | Error de red o desconocido | cualquiera | No fue posible conectar con el servidor. Intenta nuevamente. |
 
-- **Decision**: centralizar el mapeo en `src/lib/errors.ts` (`toUserMessage(error)`) y los textos en
-  `src/lib/messages.ts`.
-- **Rationale**: Principio I (textos literales en un solo lugar) y Principio IV (el mapeo es una función pura
-  que se puede probar).
+- **Decision**: centralizar en `src/lib/errors.ts` (`toAuthErrorCode`, `toUserMessage`) con los textos en
+  `src/lib/messages.ts`. Las páginas latentes siguen mostrando `error.message` como hoy (sin cambios).
 
 ## R4. Límite de 5 intentos fallidos (FR-016)
 
-- **Decision**: contador en `sessionStorage` con la clave `medapark:mfa-fallos:<userId>`. Se incrementa con
-  `mfa_verification_failed`, se reinicia al verificar con éxito, al cancelar o al cerrar sesión. Al llegar a 5,
-  se ejecuta `signOut({ scope: 'local' })`, se limpia el contador y se navega a `/admin/login` con el aviso
-  "Demasiados intentos fallidos. Inicia sesión nuevamente." (pasado por `location.state`).
-- **Rationale**: sobrevive a la recarga (la sesión pendiente también sobrevive) y no requiere tablas. El
-  límite de frecuencia del servidor (*Rate limit for token verifications*, por IP) es la defensa real ante
-  ataques automatizados.
-- **Alternatives considered**: guardar los intentos en la base de datos con bloqueo temporal (descartado en
-  clarify por complejidad).
+- **Decision**: contador en `sessionStorage` con la clave `medapark:mfa-fallos:<userId>`
+  (`src/domain/mfaAttempts.ts`). Suma 1 con `mfa_verification_failed` y se reinicia al tener éxito, al
+  cancelar o al cerrar sesión. Al llegar a 5: `signOut()`, limpieza del contador y navegación a
+  `/admin/login` con `state.notice`.
+- **Rationale**: sobrevive a la recarga y no requiere back. El límite real ante ataques lo pone Supabase
+  (límite de tasa por IP).
 
 ## R5. Exigir `aal2` en el servidor (FR-018)
 
-- **Decision**: crear una función SQL `public.es_sesion_aal2()` (`stable`, `security invoker`) que
-  devuelve `coalesce((select auth.jwt()->>'aal') = 'aal2', false)`. Las tablas administrativas de la feature
-  002 la usan en **políticas RESTRICTIVE** `to authenticated`, siguiendo el patrón oficial de Supabase:
-  ```sql
-  create policy "solo sesiones aal2" on <tabla> as restrictive to authenticated
-    using ((select public.es_sesion_aal2()));
-  ```
-  Las RPC `security definer` de la 002 deben invocar `public.es_sesion_aal2()` explícitamente.
-- **Rationale**: Principio II. La 001 entrega el helper con su prueba pgTAP para que la 002 solo lo consuma.
-- **Alternatives considered**: comprobar `aal2` solo en el frontend (viola el Principio II).
+- **Decision**: **no se requiere ningún cambio**. Las políticas RLS existentes de `parking_lots` y
+  `parking_vehicle_configs` y las RPC de ocupación ya exigen `auth.jwt()->>'aal' = 'aal2'` y dueño
+  (`docs/supabase-esquema-actual.md`). El front lo complementa con guards (UX).
+- **Rationale**: Principio II (el back es externo y ya cumple).
 
-## R6. Máquina de estados de la sesión en el frontend
+## R6. Máquina de estados de la sesión
 
-- **Decision**: función pura `resolveAuthStage({ hasSession, currentLevel, verifiedTotpCount })` que devuelve:
+| Entrada | `AuthStage` |
+|---------|-------------|
+| sin sesión | `anonimo` |
+| sesión, `currentLevel = 'aal2'` | `autenticado` |
+| sesión, `aal1`, sin factor TOTP verificado | `requiere_enrolamiento` |
+| sesión, `aal1`, con factor TOTP verificado | `requiere_verificacion` |
 
-  | Entrada | `AuthStage` |
-  |---------|-------------|
-  | sin sesión | `anonimo` |
-  | sesión, `currentLevel = 'aal2'` | `autenticado` |
-  | sesión, `aal1`, `verifiedTotpCount = 0` | `requiere_enrolamiento` |
-  | sesión, `aal1`, `verifiedTotpCount ≥ 1` | `requiere_verificacion` |
-
-  Un `AuthProvider` (React Context) calcula el estado al arrancar (validando con `auth.getUser()`, que
-  consulta al servidor) y en cada `onAuthStateChange` (`SIGNED_IN`, `SIGNED_OUT`, `TOKEN_REFRESHED`,
-  `MFA_CHALLENGE_VERIFIED`, `USER_UPDATED`). Expone `{ stage, user, refresh(), signOut() }`. Mientras se
-  resuelve, el estado es `cargando` y se muestra un spinner de pantalla completa.
-- **Rationale**: un único punto de verdad para los guards de ruta (FR-022, FR-025). La función pura cubre con
-  pruebas toda la matriz de acceso.
-- **Alternatives considered**: loaders de React Router con `redirect` (válido, pero acopla los guards al
-  router de datos; se prefiere un componente guard por simplicidad).
+- **Decision**: función pura `resolveAuthStage` en `src/domain/authStage.ts`. `AuthProvider`
+  (`src/context/`) calcula el estado al arrancar (validando con `getCurrentUser()`, que consulta al servidor)
+  y en cada `onAuthStateChange` (`SIGNED_IN`, `SIGNED_OUT`, `TOKEN_REFRESHED`, `MFA_CHALLENGE_VERIFIED`,
+  `USER_UPDATED`), difiriendo el trabajo asíncrono con `setTimeout(…, 0)`. Expone
+  `{ stage, user, refresh(), signOut() }`.
 
 ## R7. Guards de ruta
 
-- **Decision**: tres componentes de layout de React Router (`<Outlet/>`):
-  - `RequireAal2`: `autenticado` renderiza; `requiere_*` va a la pantalla MFA correspondiente; `anonimo`
-    va a `/admin/login`.
-  - `RequirePendingMfa`: permite `/admin/mfa/configurar` solo en `requiere_enrolamiento` y
-    `/admin/mfa/verificar` solo en `requiere_verificacion`; `autenticado` va a `/admin`; `anonimo` va a
-    `/admin/login`.
-  - `RedirectIfAuthenticated` (para `/admin/login`): `autenticado` va a `/admin`; `requiere_*` va a MFA;
-    `anonimo` renderiza el login.
-
-  Todas las redirecciones usan `replace` para que "Atrás" no regrese a pantallas protegidas.
-- **Rationale**: cubre los escenarios US2-11, US2-12, US3-5 y US3-8.
+- **Decision**: `RequireAal2`, `RequirePendingMfa` (prop `expected`) y `RedirectIfAuthenticated` en
+  `src/router/guards/`, como rutas de layout con `<Outlet/>` y `<Navigate replace/>`. La API declarativa de
+  `react-router` que ya usa el repo (`<Routes>`, `<Route>`) se mantiene.
+- **Rationale**: cubre la matriz de `contracts/routes.md` y reemplaza a `ProtectedRoute`.
 
 ## R8. Cierre de sesión y multipestaña
 
-- **Decision**: `supabase.auth.signOut({ scope: 'local' })`, que revoca en el servidor la sesión actual y
-  limpia el almacenamiento. supabase-js sincroniza el estado entre pestañas del mismo origen, y el
-  `AuthProvider` reacciona a `SIGNED_OUT` redirigiendo a `/admin/login`. Si una llamada a datos devuelve
-  `401` o un error de JWT (`PGRST301`), se ejecuta `signOut({ scope: 'local' })` y se redirige.
-- **Rationale**: FR-021, FR-023 y US3-9. `scope: 'local'` no cierra las sesiones de otros dispositivos del
-  mismo administrador, que no es lo que pide la HU8.
-- **Alternatives considered**: `scope: 'global'` (cerraría todos los dispositivos, más de lo pedido).
+- **Decision**: la función `logout()` existente hace `signOut()`, que por defecto es de alcance `global`.
+  Se agrega `signOutLocal()` → `signOut({ scope: 'local' })` para el MVP (solo esta sesión, como pide la
+  HU8). `AuthProvider` reacciona a `SIGNED_OUT` (supabase-js sincroniza entre pestañas). Ante un error 401 o
+  de JWT en una llamada de datos, `handleSessionError` cierra la sesión local.
+- **Alternatives considered**: `global` (cerraría los otros dispositivos del admin, más de lo pedido).
 
-## R9. Stack del frontend (aplica a todo el repo; esta feature lo instala)
+## R9. Stack (el del repo, migrado a TS)
 
-- **Decision**:
-  - Vite 6 + React 18.3 + TypeScript 5 (`strict: true`).
-  - Tailwind CSS v4 con `@tailwindcss/vite`. Tokens de diseño en `@theme` dentro de `src/styles/index.css`.
-  - `react-router-dom` 6.x, en modo declarativo con `createBrowserRouter` y layouts con `<Outlet/>`.
-  - `react-hook-form` + `zod` + `@hookform/resolvers`.
-  - `@supabase/supabase-js` 2.x.
-  - `lucide-react` para los íconos (equivalentes a los de los prototipos: Mail, Lock, Eye, LogOut, Car,
-    Bike, MapPin, etc.).
-  - Pruebas: `vitest`, `jsdom`, `@testing-library/react`, `@testing-library/user-event` y
-    `@testing-library/jest-dom`.
-  - Calidad: ESLint (flat config con `typescript-eslint`, `eslint-plugin-react-hooks` y
-    `eslint-plugin-jsx-a11y`) y Prettier.
-- **Rationale**: Principio III (pocas dependencias, todas estándar) y decisiones del wizard.
-- **Alternatives considered**: librerías de componentes (MUI, shadcn); se descartan para mantener el
-  control visual fiel a los prototipos con Tailwind.
+- **Decision**: se mantienen las versiones del repo (React 19, `react-router` 8, Vite 8, Tailwind 4,
+  `react-leaflet` 5, supabase-js 2, lucide-react) y se agregan TypeScript (strict), `typescript-eslint`,
+  React Hook Form + Zod + `@hookform/resolvers`, Vitest + jsdom + Testing Library (≥16 para React 19) y
+  Prettier.
+  - `tsconfig.app.json`: `"strict": true`, `"jsx": "react-jsx"`, `"moduleResolution": "bundler"`,
+    `"types": ["vite/client", "vitest/globals"]`.
+  - Antes de instalar, verificar en `package.json` las versiones exactas y escoger versiones compatibles de
+    las dependencias nuevas (por ejemplo, `zod` estable vigente y `@hookform/resolvers` compatible).
+- **Rationale**: decisión del equipo (stack del repo migrado a TS). No se bajan versiones.
 
-## R10. Tokens de diseño (extraídos de los prototipos)
+## R10. Tokens de diseño (prototipos y logos)
 
 | Token | Valor | Uso |
 |-------|-------|-----|
-| `--color-brand-600` | `#0E7C47` | Botones primarios ("Ingresar", "Guardar", "Verificar código"), ítem activo del menú |
+| `--color-brand-600` | `#0E7C47` | Primario (verde "Park" del logo): "Ingresar", "Guardar", "Verificar código", menú activo |
 | `--color-brand-700` | `#0B6239` | Hover del primario |
-| `--color-brand-50` | `#E7F5EE` | Fondos suaves verdes (badge "Activo", tarjeta Motocicletas) |
-| `--color-navy-900` | `#0B2559` | Títulos y texto fuerte, parte "Meda" del logo |
+| `--color-brand-50` | `#E7F5EE` | Fondos suaves verdes |
+| `--color-navy-900` | `#0B2559` | Títulos ("Meda" del logo) |
 | `--color-navy-800` | `#14284B` | Fondo del menú lateral |
-| `--color-accent-600` | `#1D5FD1` | Enlaces, cifras de "ocupadas", botón "Gestionar ocupación" |
-| `--color-accent-50` | `#EAF2FE` | Fondos suaves azules (tarjeta Automóviles, avisos informativos) |
-| `--color-danger-600` | `#E5343D` | Errores, bordes de campos inválidos, "Registrar salida", "Cerrar sesión" del modal |
-| `--color-danger-50` | `#FDECEC` | Fondo de íconos de peligro |
-| `--color-ink-500` | `#5B6B82` | Texto secundario y ayudas |
-| `--color-line` | `#D6DEE8` | Bordes de inputs y tarjetas |
+| `--color-accent-600` | `#1D5FD1` | Enlaces, "ocupadas", "Gestionar ocupación" |
+| `--color-accent-50` | `#EAF2FE` | Fondos suaves azules, avisos informativos |
+| `--color-danger-600` | `#E5343D` | Errores, "Registrar salida", confirmar "Cerrar sesión" |
+| `--color-danger-50` | `#FDECEC` | Fondos de peligro |
+| `--color-ink-500` | `#5B6B82` | Texto secundario |
+| `--color-line` | `#D6DEE8` | Bordes |
 | `--color-canvas` | `#F4F7FB` | Fondo de página |
-| Tipografía | Inter (Google Fonts) 400/500/600/700 | Toda la UI |
-| Radios | `rounded-lg` en inputs y botones, `rounded-2xl` en tarjetas | |
+| `--font-sans` | `"Inter", system-ui, sans-serif` | Toda la UI (reemplaza Nunito/Poppins; si el equipo prefiere Nunito, se cambia solo este token) |
 
-- **Rationale**: Principio V. Los valores definitivos pueden ajustarse cuando existan los mocks de Pencil
-  (`design/medapark.pen`). Si cambian, se actualiza solo `@theme`.
+Logos: `public/img/logo.svg` (horizontal) y `public/img/icon.svg` (ícono). Las referencias raster están en
+`docs/assets/logos/`.
 
-## R11. Pruebas de la base de datos contra Supabase en la nube
+## R11. Pruebas
 
-- **Decision**: pgTAP en `supabase/tests/*.test.sql`, ejecutado con `npx supabase test db --linked`. Requiere
-  `create extension if not exists pgtap with schema extensions;` (incluido en la primera migración). Cada
-  archivo corre en una transacción con `rollback`, así que no deja datos. Para simular sesiones se usa
-  `set local role authenticated;` y
-  `select set_config('request.jwt.claims', '{"sub":"<uuid>","role":"authenticated","aal":"aal2"}', true);`.
-- **Rationale**: Principio IV. Supabase está en la nube (decisión del wizard), y `--linked` evita depender de
-  Docker.
-- **Alternatives considered**: Supabase local con Docker (descartado en el wizard; puede usarse de forma
-  opcional con `--local`).
+- **Decision**: solo Vitest (unitarias y de componentes) con `vi.mock('../lib/supabase')` o
+  `vi.mock('../services/auth')`. **No** hay pruebas contra el Supabase remoto (Principio II) ni pgTAP (no hay
+  SQL propio). La integración real se valida a mano con `quickstart.md` y las cuentas de prueba del equipo.
 
-## R12. Configuración del proyecto Supabase (manual, una vez)
+## R12. Verificaciones del back que hace el equipo (no los agentes)
 
-Pasos que el equipo realiza en el dashboard o la CLI (se documentan en `quickstart.md`):
-
-1. Crear el proyecto (región `us-east-1` o la más cercana disponible).
-2. *Authentication → Sign In / Providers → Email*: habilitado. *Allow new users to sign up*: **OFF**.
-3. *Authentication → Multi-Factor*: TOTP **habilitado** (verificación y enrolamiento).
-4. *Authentication → URL Configuration → Site URL*: `http://localhost:5173` (y la URL de Netlify si se despliega).
-5. Crear los usuarios administradores (*Add user → Create new user*, con "Auto Confirm User").
-6. `npx supabase login`, `npx supabase link --project-ref <ref>` y `npx supabase db push` para aplicar las
-   migraciones.
-7. Copiar `Project URL` y la `anon`/`publishable key` a `.env.local` (`VITE_SUPABASE_URL` y
-   `VITE_SUPABASE_ANON_KEY`).
+1. *Authentication → Sign In / Providers → Allow new users to sign up*: **OFF**.
+2. *Authentication → Multi-Factor*: TOTP **habilitado**.
+3. *Authentication → URL Configuration*: Site URL y Redirect URLs incluyen `http://localhost:5173` y la URL
+   de Netlify (las usa la pantalla latente de recuperación de contraseña).
+4. Cuentas de administrador de prueba creadas (con "Auto Confirm User").

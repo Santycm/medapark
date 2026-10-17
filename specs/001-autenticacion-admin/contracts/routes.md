@@ -1,21 +1,43 @@
 # Contrato: rutas y guards (001)
 
-Rutas que define esta feature. Las features 002 y 003 agregan rutas **dentro** de los mismos layouts y
-guards, sin modificar la matriz de acceso.
+Definidas en `src/router/index.tsx` con la API declarativa de `react-router` que ya usa el repo
+(`<Routes>`/`<Route>`, layouts con `<Outlet/>`, `<Navigate replace/>`). Las páginas se cargan con `lazy()`
+como hoy, y el `Suspense` usa `Loader`. Las features 002 y 003 agregan rutas **dentro** de los mismos
+layouts y guards, sin cambiar la matriz de acceso.
 
-## Tabla de rutas
+## Rutas del MVP
 
-| Ruta | Componente | Layout | Guard |
-|------|------------|--------|-------|
-| `/` | `HomePage` (placeholder; la 003 lo reemplaza) | `PublicLayout` | ninguno |
-| `/admin/login` | `LoginPage` | `AuthLayout` | `RedirectIfAuthenticated` |
-| `/admin/mfa/configurar` | `MfaEnrollPage` | `AuthLayout` | `RequirePendingMfa` (stage = `requiere_enrolamiento`) |
-| `/admin/mfa/verificar` | `MfaVerifyPage` | `AuthLayout` | `RequirePendingMfa` (stage = `requiere_verificacion`) |
-| `/admin` | `PanelPage` (placeholder; la 002 lo reemplaza por HU4) | `AdminLayout` | `RequireAal2` |
-| `/admin/*` (no definida) | `NotFoundPage` | `AdminLayout` | `RequireAal2` |
-| `*` | `NotFoundPage` | `PublicLayout` | ninguno |
+| Ruta | Página | Layout | Guard |
+|------|--------|--------|-------|
+| `/` | `pages/public/Home` (existente; la 003 lo rediseña) | sin layout (como hoy); la 003 lo pasa a `PublicLayout` | ninguno |
+| `/admin/login` | `pages/auth/Login` (rediseñado) | `AuthLayout` | `RedirectIfAuthenticated` |
+| `/admin/mfa/configurar` | `pages/auth/MfaEnroll` (nuevo) | `AuthLayout` | `RequirePendingMfa expected="requiere_enrolamiento"` |
+| `/admin/mfa/verificar` | `pages/auth/VerifyMfa` (rediseñado) | `AuthLayout` | `RequirePendingMfa expected="requiere_verificacion"` |
+| `/admin` | `pages/app/Panel` (placeholder; la 002 lo reemplaza por HU4) | `AdminLayout` | `RequireAal2` |
+| `/admin/*` (no definida) | `pages/NotFound` | `AdminLayout` | `RequireAal2` |
+| `*` | `pages/NotFound` | — | ninguno |
 
-## Matriz de acceso (resultado de navegar a la ruta según `AuthStage`)
+## Redirecciones (compatibilidad con URLs ya publicadas)
+
+| Ruta antigua | Destino |
+|--------------|---------|
+| `/login` | `<Navigate to="/admin/login" replace/>` |
+| `/verify-mfa` | `<Navigate to="/admin/mfa/verificar" replace/>` (luego aplica el guard) |
+
+`/parking/:id` se conserva con su página actual hasta la 003, que la convierte en una redirección.
+
+## Rutas latentes (existentes, fuera del MVP, sin enlaces desde la UI)
+
+| Ruta | Página (migrada sin cambios funcionales) | Guard |
+|------|------------------------------------------|-------|
+| `/forgot-password` | `pages/auth/ForgotPassword` | ninguno |
+| `/update-password` | `pages/auth/UpdatePassword` | ninguno (llega desde el correo de Supabase) |
+| `/profile` | `pages/app/Profile` | `RequireAal2` |
+| `/setup-mfa` | `pages/auth/SetupMfa` | `RequireAal2` |
+
+Las pruebas verifican que ninguna pantalla del MVP contenga enlaces a estas rutas.
+
+## Matriz de acceso (`AuthStage` → resultado)
 
 | Ruta \ Stage | `anonimo` | `requiere_enrolamiento` | `requiere_verificacion` | `autenticado` |
 |--------------|-----------|-------------------------|-------------------------|---------------|
@@ -23,21 +45,20 @@ guards, sin modificar la matriz de acceso.
 | `/admin/login` | renderiza | → `/admin/mfa/configurar` | → `/admin/mfa/verificar` | → `/admin` |
 | `/admin/mfa/configurar` | → `/admin/login` | renderiza | → `/admin/mfa/verificar` | → `/admin` |
 | `/admin/mfa/verificar` | → `/admin/login` | → `/admin/mfa/configurar` | renderiza | → `/admin` |
-| `/admin` y `/admin/**` | → `/admin/login` | → `/admin/mfa/configurar` | → `/admin/mfa/verificar` | renderiza |
+| `/admin` y `/admin/**`, `/profile`, `/setup-mfa` | → `/admin/login` | → `/admin/mfa/configurar` | → `/admin/mfa/verificar` | renderiza |
 
-- Con `stage = 'cargando'`, todos los guards muestran `<Spinner fullScreen/>` y no redirigen.
-- Todas las redirecciones usan `<Navigate replace/>`.
-- Esta matriz se prueba con Vitest (renderizando el router en memoria con un `AuthContext` simulado), con
-  un caso por celda.
+- Con `stage = 'cargando'`, los guards muestran `<Loader/>` y no redirigen.
+- Se prueba con Vitest (`MemoryRouter` + `AuthContext` simulado), con un caso por celda más las
+  redirecciones antiguas.
 
 ## Navegación tras las acciones
 
 | Acción | Resultado |
 |--------|-----------|
-| Login OK | `refresh()`, luego navegar según el stage (`requiere_enrolamiento` o `requiere_verificacion`) |
-| Verificación o enrolamiento OK | `refresh()`, luego `/admin` |
-| "Volver al inicio de sesión" | `signOut()`, luego `/admin/login` |
-| 5.º fallo MFA | `signOut()`, luego `/admin/login` con `state.notice = MSG.mfa.demasiadosIntentos` |
-| "Cerrar sesión" confirmado | `signOut()`, luego `/admin/login` |
-| Evento `SIGNED_OUT` (otra pestaña o expiración) | El guard redirige a `/admin/login` |
-| Enlace "Acceso administradores" (`PublicLayout`) | `/admin/login` |
+| Login OK | `refresh()` y navegación según el stage |
+| Enrolamiento o verificación OK | `refresh()` y `/admin` |
+| "Volver al inicio de sesión" | `signOut()` y `/admin/login` |
+| 5.º fallo MFA | `signOut()` y `/admin/login` con `state.notice = MSG.mfa.demasiadosIntentos` |
+| "Cerrar sesión" confirmado | `signOut()` y `/admin/login` |
+| Evento `SIGNED_OUT` (otra pestaña o expiración) | el guard redirige a `/admin/login` |
+| "Acceso administradores" (encabezado público) | `/admin/login` |

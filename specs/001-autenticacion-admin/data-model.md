@@ -9,7 +9,7 @@ define estructuras de estado en el cliente.
 
 | Campo | Tipo | Regla |
 |-------|------|-------|
-| `id` | uuid | PK. Es el `admin_id` que referenciará `public.parqueaderos` (feature 002) |
+| `id` | uuid | PK. Es el `admin_id` de `public.parking_lots` (back existente, feature 002) |
 | `email` | text | Único. Se compara sin distinguir mayúsculas. Se muestra en el encabezado admin |
 | `encrypted_password` | text | Lo gestiona Supabase |
 | `email_confirmed_at` | timestamptz | Debe existir (se crea con "Auto Confirm User") |
@@ -53,7 +53,7 @@ Invariante de la app: **máximo 1 factor TOTP `verified`** por cuenta (FR-011).
 |-------|---------|-----|
 | `sub` | uuid | `auth.uid()` |
 | `role` | `authenticated` | Rol de PostgreSQL |
-| `aal` | `aal1` \| `aal2` | `aal2` = ambos factores superados → `public.es_sesion_aal2()` |
+| `aal` | `aal1` \| `aal2` | `aal2` = ambos factores superados; las políticas RLS existentes del back lo exigen (`docs/supabase-esquema-actual.md`) |
 | `amr` | lista de métodos (`password`, `totp`) | Informativo |
 
 ## Estado en el cliente
