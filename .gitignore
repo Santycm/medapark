@@ -32,6 +32,7 @@ supabase/.env
 # Agentes: solo se versionan las skills de Spec Kit
 .claude/*
 !.claude/skills/
+!.claude/settings.json
 .claude/settings.local.json
 
 # Editor directories and files / SO
