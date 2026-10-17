@@ -1,6 +1,7 @@
 <!--
 Sync Impact Report
-- Version change: (template) → 1.0.0
+- Version change: 1.0.0 → 1.0.1 (PATCH: aclaración en Restricciones técnicas, sin datos de ejemplo)
+- Previous: (template) → 1.0.0
 - Principles defined:
   I. Las historias de usuario son la fuente de verdad
   II. Seguridad en la base de datos (RLS + MFA aal2)
@@ -102,7 +103,8 @@ mano en cada entrega.
 - **Frontend**: Vite + React 18 + TypeScript (`strict`) + Tailwind CSS + React Router + React Hook Form + Zod.
   Mapas con Leaflet/OpenStreetMap (`react-leaflet`). Cliente `@supabase/supabase-js` v2.
 - **Backend**: Supabase en la nube (plan free): Auth (email/contraseña + MFA TOTP), PostgreSQL, RLS y RPC.
-  Esquema versionado en `supabase/migrations/` y datos de ejemplo en `supabase/seed.sql`.
+  Esquema versionado en `supabase/migrations/`. Sin datos de ejemplo: `supabase/seed.sql` queda vacío
+  (decisión del clarify de la feature 002).
 - **Sin servidores propios** ni Edge Functions, salvo que una spec lo justifique.
 - **Rutas externas**: Google Maps solo mediante URL (`https://www.google.com/maps/dir/?api=1&destination=lat,lng`).
 - **Despliegue**: Netlify (opcional), como SPA con redirección `/* /index.html 200`.
@@ -131,4 +133,4 @@ mano en cada entrega.
   alcance, MUST comunicarse al equipo como solicitud de cambio.
 - La guía de ejecución para agentes está en `CLAUDE.md` y en el `plan.md` de la feature activa.
 
-**Version**: 1.0.0 | **Ratified**: 2026-10-17 | **Last Amended**: 2026-10-17
+**Version**: 1.0.1 | **Ratified**: 2026-10-17 | **Last Amended**: 2026-10-17

@@ -145,4 +145,4 @@ reservas.
 - Pérdida del dispositivo TOTP del admin: el equipo debe restablecer el factor manualmente.
 - Plan free de Supabase: el proyecto se pausa tras 7 días sin actividad. Hay que reactivarlo antes de la demo.
 - La disponibilidad depende de la disciplina del admin (no hay verificación automática).
-- Datos iniciales de la Alcaldía: mientras no lleguen, se usa un seed con parqueaderos de ejemplo de Medellín.
+- Datos iniciales de la Alcaldía: **no se cargan datos de ejemplo** (decisión del clarify de 002). Para la demo, el equipo crea varias cuentas de administrador y registra sus parqueaderos desde la app.
