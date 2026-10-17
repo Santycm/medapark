@@ -1,6 +1,7 @@
 <!--
 Sync Impact Report
-- Version change: 1.0.1 → 2.0.0 (MAJOR: Principio II redefinido; integración con el repo Santycm/medapark)
+- Version change: 2.0.0 → 2.1.0 (MINOR: los cambios se hacen solo con IA; AGENTS.md es vinculante; CHANGELOG obligatorio)
+- Previous: 1.0.1 → 2.0.0 (MAJOR: Principio II redefinido; integración con el repo Santycm/medapark)
   - Principio II (redefinido): el back (Supabase) es externo y lo administran otras personas. Este proyecto
     es solo front: no hay migraciones ni cambios de esquema. Los agentes de IA solo leen el Supabase remoto.
   - Principio III: la estructura sigue las convenciones del repo existente (pages/components/services).
@@ -131,6 +132,9 @@ mano en cada entrega.
 
 ## Flujo de trabajo y calidad
 
+- **Los cambios al repo se hacen mediante agentes de IA** que siguen `AGENTS.md` (vinculante para agentes y
+  personas: arquitectura por capas, patrones, prohibiciones, Definition of Done y matriz anti-desalineación).
+  Las personas dirigen, revisan y aprueban. Ningún cambio de comportamiento entra sin estar en spec y tareas.
 - Ciclo SDD con Spec Kit: `constitution → specify → clarify → plan → tasks → (analyze) → implement`.
 - **Gitflow**: `main` = producción (Netlify publica cada push; nadie hace push directo, solo merges
   revisados desde `develop`); `develop` = integración; ramas `feature/NNN-nombre` (por ejemplo,
@@ -144,6 +148,7 @@ mano en cada entrega.
 - Los mocks de Pencil (`design/medapark.pen`) MUST existir para las pantallas de una feature antes de
   implementar su UI.
 - Ninguna credencial, token o `.env` se versiona.
+- Cada PR MUST actualizar `CHANGELOG.md` (Keep a Changelog, sección `[Unreleased]`).
 
 ## Governance
 
@@ -154,6 +159,8 @@ mano en cada entrega.
   MUST actualizar el *Sync Impact Report* y revisar las plantillas de `.specify/templates/`.
 - Las desviaciones de las HU se registran en `docs/analisis-mvp.md` y en la spec afectada. Si cambian el
   alcance, MUST comunicarse al equipo como solicitud de cambio.
-- La guía de ejecución para agentes está en `CLAUDE.md` y en el `plan.md` de la feature activa.
+- La guía de ejecución para agentes está en `AGENTS.md` (importado por `CLAUDE.md` y referido por
+  `.github/copilot-instructions.md`) y en el `plan.md` de la feature activa. Cualquier cambio a la forma de
+  trabajo MUST reflejarse a la vez en esta constitución y en `AGENTS.md`.
 
-**Version**: 2.0.0 | **Ratified**: 2026-10-17 | **Last Amended**: 2026-10-17
+**Version**: 2.1.0 | **Ratified**: 2026-10-17 | **Last Amended**: 2026-10-17

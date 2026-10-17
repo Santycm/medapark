@@ -19,12 +19,16 @@ personas**: aquí no hay migraciones ni cambios de esquema. Ver `docs/supabase-e
 
 ## Desarrollo guiado por especificaciones (Spec Kit)
 
+> **Este repo se modifica solo mediante agentes de IA** siguiendo **[`AGENTS.md`](AGENTS.md)** (reglas obligatorias,
+> patrones y anti-desalineación). Cada PR actualiza **[`CHANGELOG.md`](CHANGELOG.md)**.
+
 Orden de lectura:
 
-1. `.specify/memory/constitution.md`: principios no negociables (incluye "back externo, solo front").
-2. `docs/analisis-mvp.md`: decisiones, inconsistencias resueltas, mensajes exactos e integración con el repo existente.
-3. `docs/supabase-esquema-actual.md`: el back real (solo lectura) y una nota de permisos para su equipo.
-4. `specs/<feature>/`: `spec.md` → `plan.md` (+ `research.md`, `data-model.md`, `contracts/`, `quickstart.md`) → `tasks.md`.
+1. `AGENTS.md`: reglas de trabajo para agentes y personas.
+2. `.specify/memory/constitution.md`: principios no negociables (incluye "back externo, solo front").
+3. `docs/analisis-mvp.md`: decisiones, inconsistencias resueltas, mensajes exactos e integración con el repo existente.
+4. `docs/supabase-esquema-actual.md`: el back real (solo lectura) y una nota de permisos para su equipo.
+5. `specs/<feature>/`: `spec.md` → `plan.md` (+ `research.md`, `data-model.md`, `contracts/`, `quickstart.md`) → `tasks.md`.
 
 | Feature | Historias de usuario | Rama de implementación |
 |---------|----------------------|------------------------|
