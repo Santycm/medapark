@@ -7,17 +7,39 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencias y builds
 node_modules
 dist
 dist-ssr
+build/
+coverage/
+.vite/
+
+# Variables de entorno (nunca versionar llaves reales)
 *.local
 .env
+.env.*
+!.env.example
 
-# Editor directories and files
+# Supabase CLI
+supabase/.branches/
+supabase/.temp/
+supabase/.env
+
+# Netlify
+.netlify/
+
+# Agentes: solo se versionan las skills de Spec Kit
+.claude/*
+!.claude/skills/
+.claude/settings.local.json
+
+# Editor directories and files / SO
 .vscode/*
 !.vscode/extensions.json
 .idea
 .DS_Store
+Thumbs.db
 *.suo
 *.ntvs*
 *.njsproj

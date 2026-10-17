@@ -1,0 +1,700 @@
+pages 26
+=====PAGE 1 images: 0
+Historia de Usuarios 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Especificación funcional  
+Software FMS  
+ 
+ 
+Proyecto:  
+MEDAPARK 
+ 
+ 
+ 
+ 
+=====PAGE 2 images: 0
+Historia de Usuarios 
+Contenido 
+1. Control de cambios ...................................................................................................................... 2 
+2. Contexto del sistema.................................................................................................................... 3 
+2.1. Descripción del proyecto ......................................................................................................... 3 
+3. Historias de usuario...................................................................................................................... 4 
+4. Glosario de términos .................................................................................................................. 16 
+5. Riesgos preliminares .................................................................................................................. 17 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+=====PAGE 3 images: 0
+Historia de Usuarios 
+1. Control de cambios 
+Fecha Versión Descripción Autor 
+6/10/2026 3 Historias de Usuario John Fredy Osorio 
+3/10/2026 2 Historias de Usuario Manuela Ruiz 
+Bedoya 
+20/09/2026 1 Historias de Usuario Santiago Castaño 
+Moreno 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+=====PAGE 4 images: 1
+Historia de Usuarios 
+2. Contexto del sistema 
+2.1. Descripción del proyecto 
+Diseño y construcción de una aplicación web que permite la gestión y consulta de 
+ parqueaderos en la ciudad de Medellín. La plataforma tiene dos tipos de actor: 
+• Usuario (sin cuenta): consulta de forma pública y anónima la ubicación, horarios, 
+tarifas y disponibilidad de celdas para automóviles y motocicletas de los parqueaderos 
+registrados, y genera una ruta hacia el que seleccione mediante Google Maps. 
+• Administrador de Parqueadero (con cuenta, creada manualmente por el equipo de 
+ desarrollo): gestiona la información de su propio parqueadero — datos generales, 
+tarifas, celdas disponibles por tipo de vehículo — y actualiza el estado de ocupación de 
+las celdas conforme ingresan y salen vehículos. 
+La plataforma se construye con React (frontend, desplegado en Netlify) y Supabase 
+(backend: autenticación, base de datos PostgreSQL y API). 
+ 
+Diagrama de contextualización 
+ 
+ 
+
+=====PAGE 5 images: 0
+Historia de Usuarios 
+3. Historias de usuario 
+Identificador de la 
+historia 
+HU1 Nombre de la historia  Iniciar sesión 
+ 
+Como Administrador de Parqueadero necesito iniciar sesión con mi usuario y contraseña, para 
+acceder a las funcionalidades de gestión de mi parqueadero. 
+ 
+Campos 
+ 
+❖ Correo electrónico (obligatorio). 
+❖ Contraseña (obligatorio). 
+❖ Botón “Ingresar”. 
+ 
+Criterio de aceptación 
+ 
+❖ El campo Correo electrónico debe validar que el dato ingresado tenga el formato de correo 
+electrónico (usuario@dominio); si no cumple el formato, se muestra "Verificar correo 
+electrónico". 
+❖ Si alguno de los campos obligatorios está vacío, el sistema no debe permitir el inicio de sesión 
+y debe indicar que se deben completar los campos requeridos. 
+❖ Si el correo y/o la contraseña no coinciden con una cuenta registrada, se muestra el mensaje 
+"El correo electrónico o la contraseña son incorrectos". 
+❖ Si el inicio de sesión es exitoso, el Administrador es redirigido al panel de gestión de su 
+parqueadero. 
+❖ El botón "Ingresar" debe estar conectado a Supabase Auth para su validación de ingreso. 
+❖ No existe formulario de registro público: las cuentas de Administrador de Parqueadero son 
+creadas directamente por el equipo de desarrollo desde Supabase; por lo tanto, esta pantalla 
+no tiene opción de "Registrarse". 
+❖ Se implementa autenticación multifactor (MFA). 
+❖ El rol Usuario no tiene ni necesita pantalla de inicio de sesión — accede directamente a la 
+plataforma sin autenticarse (ver HU9). 
+ 
+Aclaración: esta es la única pantalla de autenticación de todo el sistema; no hay pantallas de registro, 
+recuperación ni cambio de contraseña en el MVP. 
+Prototipo 
+=====PAGE 6 images: 1
+Historia de Usuarios 
+ 
+ 
+ 
+Identificador de la 
+historia 
+HU2 Nombre de la historia 
+ 
+Verificar inicio de sesión 
+mediante MFA 
+ 
+ 
+Como Administrador de Parqueadero necesito verificar mi identidad mediante un 
+segundo factor de autenticación después de ingresar correctamente mi correo 
+electrónico y contraseña, para aumentar la seguridad de acceso al panel de 
+administración. 
+ 
+Campos 
+❖ Código de verificación MFA (obligatorio). 
+❖ Botón "Verificar código". 
+❖ Botón/enlace "Reenviar código". 
+❖ Opción "Volver al inicio de sesión". 
+
+=====PAGE 7 images: 0
+Historia de Usuarios 
+Criterio de aceptación  
+❖ El MFA aplica únicamente a las cuentas de Administrador de Parqueadero. 
+❖ El Administrador debe haber ingresado correctamente su correo electrónico y 
+contraseña en la HU1 antes de acceder a la verificación MFA. 
+❖ Si el correo o la contraseña son incorrectos, el sistema no debe mostrar la pantalla 
+MFA. 
+❖ Después de validar correctamente las credenciales, el sistema debe generar/enviar un 
+código de verificación mediante el mecanismo MFA configurado. 
+❖ El sistema debe mostrar un campo obligatorio para ingresar el código de verificación. 
+❖ El código debe tener una vigencia limitada. Una vez vencido, no puede utilizarse. 
+❖ El sistema debe comprobar que el código ingresado corresponda al generado para esa 
+autenticación y continúe vigente al seleccionar "Verificar código". 
+❖ El sistema completa la autenticación y redirige al Administrador al panel de gestión de 
+su parqueadero (HU3) si el código es correcto.  
+❖ Si el código es incorrecto, debe mostrarse el mensaje "El código de verificación es 
+incorrecto" y no se debe permitir el acceso al panel. 
+❖ Si el código ha vencido, debe mostrarse "El código de verificación ha expirado. 
+Solicita uno nuevo". 
+❖ La opción "Reenviar código" debe generar un nuevo código de verificación e 
+invalidar el anterior. 
+❖ El sistema debe limitar los intentos consecutivos de verificación para evitar ataques de 
+fuerza bruta. 
+❖ El Administrador no debe poder acceder directamente mediante URL a las 
+funcionalidades administrativas mientras la verificación MFA esté pendiente. 
+❖ Al seleccionar "Volver al inicio de sesión", debe cancelarse el proceso de 
+autenticación pendiente y regresar a HU1. 
+❖ La sesión del Administrador solo debe considerarse completamente autenticada 
+después de superar correctamente ambos factores. 
+❖ El MFA no debe modificar la información del parqueadero, tarifas, capacidad de celdas 
+ni datos de ocupación existentes. 
+ 
+Aclaración: esta historia amplía la autenticación definida en HU1. 
+ 
+Prototipo 
+=====PAGE 8 images: 1
+Historia de Usuarios 
+ 
+ 
+ 
+Identificador de la historia HU3 Nombre de la 
+historia 
+ 
+Registrar parqueadero 
+Como Administrador de Parqueadero necesito registrar la información básica de mi 
+parqueadero, para configurar el establecimiento que administraré y permitir 
+posteriormente su consulta por parte de los usuarios. 
+Campos 
+❖ Nombre del parqueadero (obligatorio) 
+❖ Estado del parqueadero: Activo/Inactivo. Activo por defecto. 
+❖ Dirección (obligatorio). 
+❖ Coordenadas: (obligatorio) (habilita la generación de ruta de HU11) 
+o Latitud. 
+o Longitud. 
+
+=====PAGE 9 images: 0
+Historia de Usuarios 
+❖ Teléfono de contacto (obligatorio) 
+❖ Correo electrónico de contacto (opcional) 
+❖ Horario de atención (obligatorio) — texto libre. 
+❖ Tipos de vehículo atendidos (obligatorio, selección múltiple): 
+o Automóviles. 
+o Motocicletas. 
+❖ Configurar tarifas (una o dos opciones, según el tipo de vehículo) (obligatorio). 
+❖ Configurar capacidad de celdas (una o dos opciones, según el tipo de vehículo) 
+(obligatorio). 
+❖ Botón "Guardar" 
+❖ Botón/enlace "Cerrar sesión" (visible en el encabezado de todas las pantallas del panel 
+de administración). 
+ 
+Criterio de aceptación 
+❖ El Administrador debe haber iniciado sesión para acceder a esta funcionalidad. 
+❖ La opción "Registrar parqueadero"  solo debe estar disponible cuando el 
+Administrador autenticado no tenga un parqueadero previamente registrado. 
+❖ Todos los campos obligatorios deben diligenciarse para poder guardar el registro; si 
+falta alguno, se muestra "Debe completar los campos obligatorios" y resaltarlos en 
+rojo. 
+❖ El campo teléfono solo acepta caracteres numéricos. 
+❖ El campo correo de contacto, cuando sea diligenciado, debe validar que tenga un 
+formato de correo electrónico valido. 
+❖ Las coordenadas (latitud y longitud) solo acepta caracteres numéricos (decimales y 
+negativos). Los rangos aceptados de longitud son: -180° hasta 180°. Y de latitud: -90° 
+hasta 90°. Coordenadas válidas para cualquier parte del mundo, así que alcance este 
+dentro de Medellín, Colombia.   
+❖ El campo tarifas muestra dos opciones según si eligen motocicletas y/o automóviles, y 
+solo tiene tarifa por hora, para ambos tipos.  
+❖ Al guardar exitosamente, se muestra el mensaje "Parqueadero registrado 
+exitosamente" y el parqueadero queda en estado Activo por defecto. 
+❖ Después del registro exitoso, el parqueadero debe quedar asociado al Administrador 
+autenticado. 
+❖ Una vez registrado el parqueadero, el Administrador no debe tener la posibilidad de 
+registrar un segundo parqueadero desde la misma cuenta. 
+❖ Cada cuenta de Administrador de Parqueadero registra y gestiona un único 
+parqueadero — no existe opción de registrar un segundo parqueadero desde la misma 
+cuenta. 
+❖ El parqueadero recién registrado no aparecerá en el mapa de los usuarios (HU9) hasta 
+que tenga al menos un tipo de celda configurado con cantidad mayor a cero (ver HU6). 
+❖ El Administrador solo debe poder registrar información asociada a su propia cuenta. 
+❖ El administrador no debe poder consultar ni modificar información perteneciente a 
+otros parqueaderos. 
+❖ Si la sesión no es válida o ha finalizado, el administrador no debe poder acceder al 
+panel y debe ser redirigido a la pantalla de inicio de sesión. 
+❖ Al hacer clic en "Cerrar sesión", se finaliza la sesión activa en Supabase Auth y se 
+=====PAGE 10 images: 1
+Historia de Usuarios 
+redirige a la pantalla de inicio de sesión (HU1). 
+❖ Después de cerrar sesión, no se puede acceder a ninguna pantalla del panel de 
+administración sin volver a iniciar sesión. 
+ 
+Aclaración: la ubicación se registra como dirección de texto y las coordenadas de uso 
+exclusivo para generar la ruta (HU1 1) — no se valida contra un servicio de geocodificación ni 
+se muestra en un mapa propio de edición. 
+Prototipo 
+ 
+ 
+ 
+Identificador de la historia HU4 Nombre de la historia  Consultar mi parqueadero 
+ 
+Como Administrador de Parqueadero necesito acceder al panel de gestión de mi parqueadero 
+después de iniciar sesión para consultar su información general. 
+ 
+Campos 
+
+=====PAGE 11 images: 0
+Historia de Usuarios 
+ 
+❖ Nombre del parqueadero. 
+❖ Estado del parqueadero: Activo/Inactivo. 
+❖ Dirección. 
+❖ Coordenadas:  
+o Latitud. 
+o Longitud. 
+❖ Teléfono de contacto 
+❖ Correo electrónico de contacto  
+❖ Horario de atención  
+❖ Resumen de disponibilidad por tipo de vehículo: 
+o Automóviles: disponibles / total. 
+o Motocicletas: disponibles / total. 
+❖ Botón "Gestionar ocupación". 
+❖ Botón "Editar información". 
+ 
+Criterio de aceptación 
+ 
+❖ Al iniciar sesión correctamente, el Administrador de Parqueadero debe ser redirigido al panel de 
+gestión. 
+❖ El panel debe mostrar únicamente la información correspondiente al parqueadero asociado al 
+administrador autenticado. 
+❖ Si el administrador todavía no tiene configurada la información de su parqueadero, el sistema 
+debe mostrar una opción para "Registrar parqueadero" (HU3). 
+❖ Si el parqueadero ya está registrado, el sistema debe mostrar su información general y las 
+opciones disponibles para administrarlo. 
+❖ Mientras no exista un parqueadero registrado, las funcionalidades "Gestionar ocupación" y 
+“Editar información” no deben estar disponibles. 
+❖ El sistema debe mostrar el estado actual del parqueadero como Activo o Inactivo. 
+❖ Para cada tipo de vehículo atendido, el sistema debe mostrar la cantidad de celdas disponibles 
+respecto a la capacidad total configurada. Ejemplo: "Automóviles: 15 disponibles / 20". 
+❖ Al seleccionar "Gestionar ocupación", debe acceder a la funcionalidad para registrar ingresos y 
+salidas de vehículos. 
+❖ Al seleccionar “Editar información” debe acceder al formulario del parqueadero en modo edición 
+(HU5). 
+❖ El administrador no debe poder consultar ni modificar información perteneciente a otros 
+parqueaderos. 
+❖ Si la sesión no es válida o ha finalizado, el administrador no debe poder acceder al panel y debe 
+ser redirigido a la pantalla de inicio de sesión. 
+❖ Al hacer clic en "Cerrar sesión", se finaliza la sesión activa en Supabase Auth y se redirige a la 
+pantalla de inicio de sesión (HU1). 
+❖ Después de cerrar sesión, no se puede acceder a ninguna pantalla del panel de administración 
+sin volver a iniciar sesión. 
+ 
+Aclaración: Esta historia representa el panel principal de administración de MEDAPARK. Su función es 
+centralizar el acceso a las diferentes funcionalidades de gestión del parqueadero; los procesos 
+=====PAGE 12 images: 1
+Historia de Usuarios 
+específicos de registro, actualización de información, configuración de tarifas, configuración de 
+capacidad y gestión de ocupación se definen en sus respectivas historias de usuario. Todos los datos 
+se muestran en modo lectura.  
+ 
+Prototipo 
+ 
+ 
+ 
+Identificador de la historia HU5 Nombre de la 
+historia 
+ 
+Actualizar/Editar mi parqueadero 
+ 
+Como Administrador de Parqueadero necesito actualizar la información de mi 
+parqueadero, para mantener los datos publicados correctos y vigentes. 
+ 
+Campos 
+ 
+❖ Los mismos campos de HU4 (nombre, dirección, coordenadas, teléfono, correo, 
+
+=====PAGE 13 images: 0
+Historia de Usuarios 
+horario, tipos de vehículo atendidos, tarifas, capacidad de celdas).  
+❖ Campo Estado (Activo / Inactivo) 
+❖ Botón "Guardar cambios"  
+❖ Botón "Cancelar". 
+Criterio de aceptación  
+❖ El Administrador debe haber iniciado sesión para acceder a esta funcionalidad. 
+❖ El sistema debe mostrar únicamente la información correspondiente al parqueadero 
+asociado al Administrador autenticado. 
+❖ Los campos Nombre del parqueadero, Dirección, Latitud, Longitud, Teléfono de 
+contacto, Horario de atención, Tipos de vehículo atendidos, Tarifas y Capacidad 
+deben permanecer obligatorios. 
+❖ Se pueden editar todos los campos registrados en HU3. 
+❖ El campo Estado permite alternar entre Activo e Inactivo. 
+❖ Si el parqueadero se marca como Inactivo, deja de aparecer en el mapa interactivo y 
+en cualquier consulta de los usuarios (HU9, HU10) hasta que vuelva a marcarse como 
+Activo. 
+❖ Si el parqueadero vuelve a cambiarse a estado Activo, podrá aparecer nuevamente 
+en las consultas públicas siempre que cumpla las demás condiciones requeridas para 
+su publicación. 
+❖ El Administrador debe mantener seleccionado al menos un tipo de vehículo atendido. 
+❖ Si se modifican la latitud o longitud, la nueva ubicación debe ser utilizada 
+posteriormente para mostrar el parqueadero en el mapa público y para generar la ruta 
+mediante Google Maps. 
+❖ Se muestra el mensaje "Información actualizada exitosamente" al guardar los cambios 
+correctamente. 
+❖ Se muestra "Debe completar los campos obligatorios" si se intenta guardar dejando 
+vacío algún campo obligatorio. Y se seleccionan en rojo. 
+❖ Si el administrador intenta desmarcar un tipo de vehículo atendido que aún tiene 
+celdas configuradas (HU6) con cantidad mayor a cero, se muestra la advertencia: 
+"Debe reducir a cero las celdas de este tipo de vehículo antes de quitarlo de los tipos 
+atendidos". 
+❖ Después de guardar correctamente, la información actualizada debe mostrarse en 
+modo de consulta. 
+❖ Al seleccionar "Cancelar" durante la edición, el sistema debe descartar los cambios 
+no guardados y conservar la información registrada previamente. 
+❖ El Administrador no debe poder consultar ni modificar la información correspondiente a 
+otros parqueaderos. 
+ 
+Prototipo 
+=====PAGE 14 images: 1
+Historia de Usuarios 
+ 
+ 
+ 
+Identificador de la historia HU6 Nombre de la 
+historia 
+ 
+Configurar celdas del parqueadero 
+ 
+Como Administrador de Parqueadero necesito registrar la cantidad de celdas disponibles para 
+automóviles y motocicletas, para que el sistema pueda calcular y mostrar la disponibilidad a los 
+usuarios. 
+ 
+Campos 
+ 
+❖ Cantidad total de celdas para automóviles (numérico; obligatorio si el parqueadero atiende 
+automóviles, ver HU3). 
+❖ Cantidad total de celdas para motocicletas (numérico; obligatorio si el parqueadero atiende 
+motocicletas). 
+
+=====PAGE 15 images: 0
+Historia de Usuarios 
+Criterio de aceptación  
+❖ Solo se solicitan los campos de los tipos de vehículo que el parqueadero atiende (definidos en 
+HU3); si el parqueadero no atiende motocicletas, no se muestra el campo de celdas de moto. 
+❖ Los valores deben ser números enteros mayores a cero. 
+❖ Se puede actualizar el número de celdas a 0, solo si no hay celdas ocupadas. De lo contrario, 
+primero se deben registrar las salidas hasta quedar con todas las disponibilidades de celdas. 
+❖ Al guardar por primera vez, el sistema inicializa esa cantidad de celdas en estado Disponible. 
+❖ El administrador puede modificar la cantidad total en cualquier momento (aumentar o disminuir).  
+❖ Si intenta reducir la cantidad total por debajo de las celdas actualmente marcadas como ocupadas 
+(ver HU7), se muestra el mensaje de advertencia: "No puede reducir la cantidad de celdas por 
+debajo de las celdas actualmente ocupadas" y no se guarda el cambio. 
+❖ Esta pantalla gestiona la cantidad total configurada de celdas por tipo, no el estado individual de 
+ocupación de cada una — eso se gestiona en HU7 y HU8. 
+ 
+Aclaración: la plataforma no distingue celdas individuales con numeración o identificador propio visible al 
+Usuario; se gestiona como un conteo agregado de disponibles/ocupadas por tipo de vehículo (no hay 
+mapa de celdas físicas dentro del parqueadero). Estas opciones las configuramos en la HU3 y las 
+podemos editar en la HU5. 
+Prototipo 
+=====PAGE 16 images: 1
+Historia de Usuarios 
+ 
+ 
+ 
+Identificador de la historia HU7 Nombre de la 
+historia 
+ 
+Gestionar ocupación 
+ 
+Como Administrador de Parqueadero necesito registrar el ingreso y la salida de vehículos del 
+parqueadero para mantener actualizada la cantidad de celdas ocupadas y disponibles que 
+consultan los usuarios. 
+ 
+Campos 
+Para cada tipo de vehículo atendido: 
+❖ Tipo de vehículo: 
+o Automóvil. 
+
+=====PAGE 17 images: 0
+Historia de Usuarios 
+o Motocicleta. 
+❖ Capacidad total. 
+❖ Registrar placa. 
+❖ Celdas ocupadas. 
+❖ Celdas disponibles. 
+❖ Botón "Registrar ingreso". 
+❖ Botón "Registrar salida". 
+❖ Opción "Volver al panel". 
+Criterio de aceptación  
+❖ El Administrador debe haber iniciado sesión para acceder a esta funcionalidad. 
+❖ El Administrador debe tener un parqueadero previamente registrado (HU3). 
+❖ El parqueadero debe tener capacidad de celdas previamente configurada mediante HU6 para 
+poder gestionar su ocupación. 
+❖ El sistema debe mostrar únicamente los tipos de vehículo que el parqueadero tenga definidos 
+como atendidos. 
+❖ Para cada tipo de vehículo, el sistema debe mostrar la capacidad total, la cantidad de celdas 
+ocupadas y la cantidad de celdas disponibles. 
+❖ La cantidad de celdas disponibles debe calcularse a partir de la capacidad total y la cantidad de 
+celdas ocupadas. 
+❖ Al seleccionar "Registrar ingreso", el sistema debe aumentar en uno la cantidad de celdas 
+ocupadas del tipo de vehículo correspondiente. 
+❖ Al registrar un ingreso, la cantidad de celdas disponibles debe disminuir en uno. 
+❖ El sistema no debe permitir registrar un ingreso cuando la cantidad de celdas disponibles del tipo 
+de vehículo correspondiente sea igual a cero. 
+❖ Si no existen celdas disponibles, el botón "Registrar ingreso" debe estar deshabilitado y el 
+sistema debe mostrar el mensaje "No hay celdas disponibles de este tipo". 
+❖ La cantidad de celdas ocupadas debe superar la capacidad total configurada. 
+❖ Al seleccionar "Registrar salida", el sistema debe disminuir en uno la cantidad de celdas 
+ocupadas del tipo de vehículo correspondiente. 
+❖ Al registrar una salida, la cantidad de celdas disponibles debe aumentar en uno. 
+❖ El sistema no debe permitir registrar una salida cuando la cantidad de celdas ocupadas del tipo 
+de vehículo correspondiente sea igual a cero. 
+❖ Si no existen celdas ocupadas, el botón "Registrar salida" debe estar deshabilitado y el sistema 
+debe mostrar el mensaje "No hay celdas ocupadas de este tipo para liberar". 
+❖ La cantidad de celdas ocupadas debe ser inferior a cero. 
+❖ Después de registrar un ingreso o una salida, el sistema debe actualizar inmediatamente el 
+conteo mostrado al Administrador. 
+❖ La nueva disponibilidad debe almacenarse para que pueda ser consultada posteriormente por los 
+usuarios. 
+❖ Los usuarios visualizarán el último estado de disponibilidad registrado cuando consulten o 
+recarguen la plataforma. 
+❖ MEDAPARK no realizará actualización automática en tiempo real de la información que ya se 
+encuentre abierta en el dispositivo de otro Usuario. 
+❖ La disponibilidad actualizada debe reflejarse en el panel de gestión del Administrador (HU3) y en 
+el detalle público del parqueadero (HU10). 
+=====PAGE 18 images: 1
+Historia de Usuarios 
+❖ La información de ocupación debe quedar asociada únicamente al parqueadero del 
+Administrador autenticado. 
+❖ El Administrador no debe poder modificar la ocupación correspondiente a otros parqueaderos. 
+❖ Al seleccionar "Volver al panel", el sistema debe regresar al panel de gestión del parqueadero 
+(HU3). 
+Aclaración: En esta primera versión tampoco se genera historial o bitácora de ingresos y 
+salidas. 
+El registro de ingreso y salida tiene como única finalidad mantener actualizado el conteo de 
+ocupación y disponibilidad del parqueadero. 
+Prototipo 
+ 
+ 
+ 
+ 
+Identificador de la historia HU8 Nombre de la Cerrar Sesión 
+
+=====PAGE 19 images: 0
+Historia de Usuarios 
+historia 
+ 
+Como Administrador de Parqueadero necesito cerrar mi sesión en la plataforma para finalizar de 
+forma segura el acceso a las funcionalidades de gestión de mi parqueadero. 
+Campos 
+❖ Opción o botón "Cerrar sesión", disponible desde el panel de administración. 
+Criterio de aceptación  
+❖ La opción "Cerrar sesión" debe estar disponible mientras el Administrador tenga una sesión 
+activa. 
+❖ Al seleccionar "Cerrar sesión", el sistema debe finalizar la sesión activa del Administrador 
+mediante Supabase Auth. 
+❖ Después de cerrar sesión correctamente, el sistema debe redirigir al Administrador a la pantalla 
+de inicio de sesión (HU1). 
+❖ Una vez cerrada la sesión, el Administrador no debe poder acceder al panel de gestión (HU3) ni 
+a ninguna funcionalidad administrativa sin volver a autenticarse. 
+❖ Si el Administrador intenta acceder directamente mediante la URL a una funcionalidad 
+administrativa después de cerrar sesión, el sistema debe impedir el acceso y redirigirlo a la 
+pantalla de inicio de sesión (HU1). 
+❖ El cierre de sesión no debe modificar ni eliminar la información registrada del parqueadero. 
+❖ El cierre de sesión no debe modificar las tarifas, capacidad de celdas ni información de 
+ocupación registrada previamente. 
+❖ Al iniciar sesión nuevamente, el Administrador debe poder consultar la información de su 
+parqueadero conservada previamente. 
+Aclaración: El cierre de sesión únicamente finaliza la sesión activa del Administrador. No elimina la 
+cuenta ni la información asociada al parqueadero. 
+El Usuario público no requiere esta funcionalidad debido a que accede a las funcionalidades públicas 
+de MEDAPARK sin autenticación. 
+ 
+Prototipo 
+=====PAGE 20 images: 1
+Historia de Usuarios 
+ 
+ 
+ 
+Identificador de la historia HU9 Nombre de la 
+historia 
+ 
+Visualizar mapa de parqueaderos 
+Como Usuario necesito visualizar en un mapa interactivo los parqueaderos registrados en la 
+plataforma, para identificar fácilmente las alternativas disponibles en la ciudad. 
+Campos 
+❖ Mapa interactivo con un punto/marcador por cada parqueadero en estado Activo. 
+Criterio de aceptación  
+❖ El mapa muestra únicamente los parqueaderos en estado Activo (ver HU3, HU5) y que tienen 
+celdas ya sea de motocicletas y/o automóviles mayores a 0; los parqueaderos en estado Inactivo 
+no aparecen. 
+
+=====PAGE 21 images: 1
+Historia de Usuarios 
+❖ Cada parqueadero se representa con un punto en la ubicación registrada (a partir de la 
+dirección/coordenadas de HU3). 
+❖ El Usuario no necesita iniciar sesión ni registrarse para acceder al mapa — es de acceso público 
+y anónimo. 
+❖ El mapa no incluye agrupación de puntos ("clustering") ni navegación embebida dentro de la 
+plataforma — ambas explícitamente fuera de alcance según la propuesta comercial. 
+❖ No hay campo de búsqueda ni filtros adicionales en esta primera etapa: el Usuario visualiza todos 
+los parqueaderos activos y hace clic en cada uno para consultar su información (decisión 
+confirmada con el equipo). 
+❖ Al hacer clic sobre un punto, se abre la información detallada del parqueadero (HU10). 
+ 
+Prototipo 
+ 
+ 
+ 
+ 
+
+=====PAGE 22 images: 0
+Historia de Usuarios 
+Identificador de la historia HU10 Nombre de la historia 
+ 
+Consultar detalle del parqueadero 
+ 
+Como Usuario necesito consultar la información detallada de un parqueadero al seleccionarlo en 
+el mapa, para decidir si se ajusta a mis necesidades antes de dirigirme allí. 
+ 
+Campos 
+ 
+❖ Nombre del parqueadero 
+❖ Dirección 
+❖ Horario de atención 
+❖ Tarifas configuradas 
+❖ Disponibilidad actual de celdas para automóviles (si el parqueadero atiende este tipo) 
+❖ Disponibilidad actual de celdas para motocicletas (si el parqueadero atiende este tipo) 
+❖ Información de contacto (teléfono y correo si fue diligenciado) 
+❖ Botón "Cómo llegar" (ver HU11)  
+Criterio de aceptación  
+❖ La información mostrada corresponde exactamente a la registrada por el Administrador de 
+Parqueadero (HU3, HU5). 
+❖ La disponibilidad mostrada refleja el último estado registrado por el administrador — no es 
+instantánea ni en tiempo real. 
+❖ Si el parqueadero no atiende un tipo de vehículo, no se muestra información de disponibilidad ni 
+tarifa para ese tipo. 
+❖ El botón "Cómo llegar" solo se muestra si el parqueadero tiene un enlace/coordenadas de Google 
+Maps configurado (HU3); en caso contrario, no se muestra o aparece deshabilitado. 
+ 
+Prototipo 
+=====PAGE 23 images: 1
+Historia de Usuarios 
+ 
+ 
+Identificador de la historia HU11 Nombre de la 
+historia 
+ 
+Generar ruta (Google Maps) 
+ 
+Como Usuario necesito generar una ruta hacia el parqueadero seleccionado, para llegar 
+fácilmente al establecimiento usando una aplicación de navegación que ya conozco. 
+ 
+Campos 
+❖ Botón "Cómo llegar" dentro del detalle del parqueadero (HU10) 
+Criterio de aceptación  
+❖ Al hacer clic en "Cómo llegar", se abre Google Maps (aplicación instalada o navegador web, 
+según el dispositivo del Usuario) con la ubicación del parqueadero seleccionado. 
+❖ La integración se limita a la generación de un enlace con las coordenadas o dirección del 
+parqueadero. 
+
+=====PAGE 24 images: 1
+Historia de Usuarios 
+❖ No hay integración avanzada con las APIs de Google Maps: no se calculan tiempos de viaje, 
+tráfico en vivo, ni rutas alternativas dentro de la plataforma — eso lo resuelve la propia aplicación 
+de Google Maps una vez abierta. 
+❖ Si el parqueadero no tiene ubicación/coordenadas de Google Maps configuradas, el botón "Cómo 
+llegar" no se muestra (ver HU10). 
+ 
+Prototipo 
+ 
+ 
+ 
+ 
+ 
+ 
+
+=====PAGE 25 images: 0
+Historia de Usuarios 
+4. Glosario de términos 
+HU, Historia de usuario: requisito funcional redactado desde la perspectiva de quien lo necesita, 
+con sus criterios de aceptación. 
+MVP, Producto Mínimo Viable: primera versión de la plataforma con el alcance mínimo necesario 
+para entregar valor real, descrito en la propuesta comercial firmada. 
+Parqueadero, Establecimiento registrado en la plataforma que ofrece celdas de estacionamiento 
+para automóviles y/o motocicletas. 
+Celda, Espacio de estacionamiento dentro de un parqueadero; se gestiona como conteo agregado 
+(disponible/ocupada) por tipo de vehículo, sin identificador individual visible al Usuario. 
+Administrador de Parqueadero, Rol con cuenta (creada manualmente por el equipo de desarrollo) 
+que gestiona la información, tarifas, celdas y disponibilidad de su único parqueadero. 
+Usuario, Rol sin cuenta que consulta parqueaderos, disponibilidad y tarifas de forma pública y 
+anónima, y genera rutas hacia el parqueadero seleccionado. 
+RLS (Row Level Security), Mecanismo de seguridad de Supabase/PostgreSQL que restringe qué 
+filas de una tabla puede leer o modificar cada usuario, usado para separar el acceso público 
+(Usuario) del acceso autenticado (Administrador). 
+Disponibilidad, Conteo de celdas libres por tipo de vehículo en un parqueadero, actualizado 
+manualmente por el Administrador de Parqueadero. 
+ 
+5. Riesgos preliminares 
+• Concentración de conocimiento técnico: el rol de Desarrollador es rotativo entre los 3 
+integrantes del equipo (según la propuesta comercial), lo que puede generar curva de 
+aprendizaje o inconsistencias de estilo/código entre módulos si no se documenta bien 
+cada entrega. 
+• Dependencia de información externa: el listado inicial de parqueaderos (con ubicación, 
+horarios y tarifas vigentes) debe ser entregado por la Alcaldía de Medellín; un retraso en 
+esta entrega puede bloquear las pruebas de datos reales antes de la entrega final. 
+• Ausencia de recuperación de contraseña: si un Administrador de Parqueadero olvida su 
+contraseña, depende completamente de que el equipo de desarrollo se la restablezca 
+manualmente — riesgo operativo si el equipo no está disponible en el momento en que se 
+necesita. 
+• Calidad de la disponibilidad depende 100% de la disciplina operativa del Administrador: si 
+el administrador olvida registrar un ingreso o salida, la disponibilidad mostrada a los 
+=====PAGE 26 images: 0
+Historia de Usuarios 
+Usuarios queda desactualizada; no hay ningún mecanismo automático de verificación o 
+corrección en este MVP. 
+• Alcance cerrado y firmado: cualquier funcionalidad adicional a la descrita en este 
+documento y en la propuesta comercial se considera solicitud de cambio y debe evaluarse 
+formalmente en tiempo/costo antes de incorporarse — ver sección "Fuera del alcance" de 
+la propuesta comercial. 
+ 
+ 
+ 
