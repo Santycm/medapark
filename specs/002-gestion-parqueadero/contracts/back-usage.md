@@ -63,9 +63,9 @@ const { error: e2 } = await supabase
 
 | Resultado | Comportamiento del front |
 |-----------|--------------------------|
-| Paso 1 con error `23505` (`parking_lots_admin_id_key`) | `MSG.parqueadero.yaExiste` → `recargar()` → `/admin` |
-| Paso 1 OK, paso 2 con error | `MSG.parqueadero.registroIncompleto` → `recargar()` → `/admin` (el panel muestra el aviso "sin tipos") |
-| Ambos OK | `recargar()` → `/admin` con `flash = MSG.parqueadero.registrado` |
+| Paso 1 con error `23505` (`parking_lots_admin_id_key`) | `MSG.parqueadero.yaExiste` → `reload()` → `/admin` |
+| Paso 1 OK, paso 2 con error | `MSG.parqueadero.registroIncompleto` → `reload()` → `/admin` (el panel muestra el aviso "sin tipos") |
+| Ambos OK | `reload()` → `/admin` con `flash = MSG.parqueadero.registrado` |
 
 ## 4. Edición (HU5): validación previa + guardado secuencial
 
@@ -103,15 +103,15 @@ await supabase.from('parking_lots')
 ```
 
 - Si falla el paso 1 y no se escribió nada: mensaje del error y sin recarga.
-- Si falla un paso posterior: `MSG.parqueadero.guardadoParcial` y `recargar()` + `reset(toFormValues(fresh))`.
-- Éxito: `recargar()` y `/admin` con `flash = MSG.parqueadero.actualizado`.
+- Si falla un paso posterior: `MSG.parqueadero.guardadoParcial` y `reload()` + `reset(toFormValues(fresh))`.
+- Éxito: `reload()` y `/admin` con `flash = MSG.parqueadero.actualizado`.
 
 ## 5. Configurar celdas (HU6)
 
 1. Leer de nuevo (§2) y validar en el cliente: `nueva ≥ occupied_spaces` por tipo (si no, `MSG.celdas.reducir`).
 2. Para cada tipo cuyo valor cambió:
    `supabase.from('parking_vehicle_configs').update({ total_spaces }).eq('id', config.id).select('id')`.
-3. Un error `23514` en `parking_vehicle_configs_check` (concurrencia) → `MSG.celdas.reducir` + `recargar()`.
+3. Un error `23514` en `parking_vehicle_configs_check` (concurrencia) → `MSG.celdas.reducir` + `reload()`.
 
 ## 6. Ocupación (HU7): RPC existentes
 

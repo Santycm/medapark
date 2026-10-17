@@ -100,7 +100,7 @@ description: "Task list for 001-autenticacion-admin (sobre el repo existente San
 ## Phase 6: Polish & Cross-Cutting Concerns
 
 - [ ] T043 [P] Prueba `src/router/latentRoutes.test.tsx`: renderizar Login, VerifyMfa, MfaEnroll, AdminLayout y PublicLayout y afirmar que no hay enlaces a `/forgot-password`, `/update-password`, `/profile` ni `/setup-mfa` (FR-032)
-- [ ] T044 [P] Eliminar `src/components/auth/ProtectedRoute.tsx` si ya no tiene usos (`rg ProtectedRoute src`)
+- [ ] T044 [P] Si `src/components/auth/ProtectedRoute.tsx` ya no tiene usos (`rg ProtectedRoute src`), marcarlo con un comentario `/** @deprecated Reemplazado por src/router/guards (MFA obligatorio). Se conserva por decisión del equipo. */` (no eliminar)
 - [ ] T045 [P] Revisión responsive (360, 768 y 1280 px) y de accesibilidad (teclado Login → MFA → panel → modal, foco visible, contraste AA)
 - [ ] T046 [P] Actualizar `README.md` (sección "Desarrollo": `.env`, scripts, Gitflow, regla de solo lectura de Supabase)
 - [ ] T047 `npm run lint`, `npm run typecheck`, `npm test` y `npm run build` en verde

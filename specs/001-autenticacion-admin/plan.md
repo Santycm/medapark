@@ -113,7 +113,7 @@ rediseñado; **(N)** = nuevo.
     ├── components/
     │   ├── auth/
     │   │   ├── AuthAlert.tsx · AuthButton.tsx · AuthCard.tsx · AuthInput.tsx · AuthMessage.tsx   (M: los usan las páginas latentes)
-    │   │   ├── ProtectedRoute.tsx   (M: queda sin uso tras T024; se elimina en Polish)
+    │   │   ├── ProtectedRoute.tsx   (M: queda sin uso tras T024; se conserva marcado @deprecated)
     │   │   ├── OtpInput.tsx · AuthSteps.tsx · LogoutDialog.tsx   (N)
     │   ├── common/
     │   │   ├── Loader.tsx           (M)
