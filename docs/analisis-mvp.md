@@ -55,7 +55,7 @@ Dependencias: 002 depende de 001 (sesión aal2). 003 depende del esquema de 002 
 | Campo "Registrar placa" (HU7) | **No entra**: no hay historial y el prototipo no lo muestra |
 | Menú lateral "Usuarios", "Reportes", "Configuración" y tarjeta "Reportes" | **No entra** (no hay HU) |
 | "Usuario ▾ / Cerrar sesión" en el encabezado del mapa público | **No entra**: el usuario es anónimo. En su lugar va el enlace "Acceso administradores" |
-| Marcadores grises de "Parqueadero inactivo" en el mapa público | **No entra**: HU9 dice que los inactivos no aparecen. La leyenda solo muestra "Parqueadero activo" |
+| Marcadores grises de "Parqueadero inactivo" en el mapa público | **No entra**: HU9 dice que los inactivos no aparecen. El gris se reutiliza para los parqueaderos publicados **sin celdas disponibles** (llenos), según el clarify de la 003 |
 | Correo de contacto marcado obligatorio en el prototipo de HU5 | **Prevalece el texto**: es opcional |
 | Modal de confirmación al cerrar sesión (prototipo HU8) | **Entra** |
 
