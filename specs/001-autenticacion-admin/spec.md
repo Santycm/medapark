@@ -121,6 +121,7 @@ igual.
 ### Edge Cases
 
 - **Correo con espacios o mayúsculas**: se eliminan los espacios al inicio y al final y la comparación no distingue mayúsculas.
+- **Límite de frecuencia del servidor** (demasiadas solicitudes desde el mismo origen): se muestra "Demasiados intentos. Espera unos minutos e intenta nuevamente." y no se avanza.
 - **Error de red o servicio no disponible** en cualquier paso: se muestra "No fue posible conectar con el servidor. Intenta nuevamente." sin perder lo digitado (excepto la contraseña) y sin avanzar de paso.
 - **Cuenta deshabilitada o eliminada por el equipo** con credenciales que antes eran válidas: se trata como credenciales incorrectas (mismo mensaje de HU1, sin revelar el motivo).
 - **Código con menos de 6 dígitos o con letras**: el campo solo admite dígitos, y "Verificar código" queda deshabilitado hasta completar 6.
