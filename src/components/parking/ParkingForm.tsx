@@ -13,6 +13,7 @@ import {
   MapPin,
   Phone,
   Save,
+  type LucideIcon,
 } from 'lucide-react';
 import {
   canRemoveType,
@@ -107,16 +108,17 @@ const ParkingForm = ({
     setError(field, { type: 'server', message: serverError.message });
   }, [serverError, setError]);
 
-  const toggleType = (field: 'servesCars' | 'servesMotorcycles', type: VehicleType) => (checked: boolean) => {
-    const saved = savedConfigs?.find((c) => c.vehicle_type === type);
-    if (!checked && !canRemoveType(saved)) {
-      setValue(field, true);
-      setError(field, { type: 'manual', message: MSG.parqueadero.quitarTipo });
-      return;
-    }
-    clearErrors(['servesCars', 'servesMotorcycles']);
-    setValue(field, checked, { shouldDirty: true, shouldValidate: true });
-  };
+  const toggleType =
+    (field: 'servesCars' | 'servesMotorcycles', type: VehicleType) => (checked: boolean) => {
+      const saved = savedConfigs?.find((c) => c.vehicle_type === type);
+      if (!checked && !canRemoveType(saved)) {
+        setValue(field, true);
+        setError(field, { type: 'manual', message: MSG.parqueadero.quitarTipo });
+        return;
+      }
+      clearErrors(['servesCars', 'servesMotorcycles']);
+      setValue(field, checked, { shouldDirty: true, shouldValidate: true });
+    };
 
   const onInvalid = () => setShowSummary(true);
   const submit = handleSubmit(async (v) => {
@@ -127,14 +129,25 @@ const ParkingForm = ({
   const groupError = errors.servesCars?.message ?? errors.servesMotorcycles?.message;
   const editing = mode === 'editar';
 
+  /** Tarjeta de un tipo de vehículo: aparece y desaparece con su check, en su propia columna. */
   const typeFields = (
     serves: boolean,
     label: string,
+    Icon: LucideIcon,
+    tone: string,
+    column: string,
     rate: 'carRate' | 'motorcycleRate',
     spaces: 'carSpaces' | 'motorcycleSpaces',
   ) =>
     serves && (
-      <div className="grid gap-4 sm:grid-cols-2">
+      <section
+        aria-label={`Configuración de ${label}`}
+        className={`space-y-4 rounded-[14px] border border-line p-4 ${tone} ${column}`}
+      >
+        <h3 className="flex items-center gap-2 text-base font-bold text-navy-900">
+          <Icon size={20} aria-hidden="true" />
+          {label}
+        </h3>
         <TextField
           label={`Tarifa por hora (${label})`}
           required
@@ -155,7 +168,7 @@ const ParkingForm = ({
           error={errors[spaces]?.message}
           {...register(spaces)}
         />
-      </div>
+      </section>
     );
 
   return (
@@ -248,8 +261,14 @@ const ParkingForm = ({
               latitude={lat}
               longitude={lng}
               onChange={(nextLat, nextLng) => {
-                setValue('latitude', formatCoord(nextLat), { shouldValidate: true, shouldDirty: true });
-                setValue('longitude', formatCoord(nextLng), { shouldValidate: true, shouldDirty: true });
+                setValue('latitude', formatCoord(nextLat), {
+                  shouldValidate: true,
+                  shouldDirty: true,
+                });
+                setValue('longitude', formatCoord(nextLng), {
+                  shouldValidate: true,
+                  shouldDirty: true,
+                });
               }}
             />
             <div className="mt-3 rounded-[10px] bg-accent-50 p-3.5 text-sm text-navy-900">
@@ -289,18 +308,42 @@ const ParkingForm = ({
                 label="Motocicletas"
                 icon={<Bike size={22} aria-hidden="true" />}
                 checked={values.servesMotorcycles}
-                onChange={(event) => toggleType('servesMotorcycles', 'MOTORCYCLE')(event.target.checked)}
+                onChange={(event) =>
+                  toggleType('servesMotorcycles', 'MOTORCYCLE')(event.target.checked)
+                }
               />
             </div>
             <FieldMessage>{groupError}</FieldMessage>
           </fieldset>
 
-          {typeFields(values.servesCars, 'Automóviles', 'carRate', 'carSpaces')}
-          {typeFields(values.servesMotorcycles, 'Motocicletas', 'motorcycleRate', 'motorcycleSpaces')}
+          {(values.servesCars || values.servesMotorcycles) && (
+            <div className="grid items-start gap-4 sm:grid-cols-2">
+              {typeFields(
+                values.servesCars,
+                'Automóviles',
+                Car,
+                'bg-accent-50/50',
+                'sm:col-start-1',
+                'carRate',
+                'carSpaces',
+              )}
+              {typeFields(
+                values.servesMotorcycles,
+                'Motocicletas',
+                Bike,
+                'bg-brand-50/60',
+                'sm:col-start-2',
+                'motorcycleRate',
+                'motorcycleSpaces',
+              )}
+            </div>
+          )}
 
           {editing && (
             <fieldset className="space-y-3">
-              <legend className="text-sm font-semibold text-navy-900">Estado del parqueadero</legend>
+              <legend className="text-sm font-semibold text-navy-900">
+                Estado del parqueadero
+              </legend>
               <div className="grid gap-3 sm:grid-cols-2">
                 <RadioCard
                   name="status"
@@ -328,7 +371,12 @@ const ParkingForm = ({
         {showSummary && <FieldMessage>{MSG.parqueadero.requeridos}</FieldMessage>}
         {serverError && <Alert>{serverError.message}</Alert>}
         <div className="flex justify-end gap-3">
-          <Button variant="secondary" onClick={onCancel} disabled={submitting} className="px-7 py-3">
+          <Button
+            variant="secondary"
+            onClick={onCancel}
+            disabled={submitting}
+            className="px-7 py-3"
+          >
             Cancelar
           </Button>
           <Button type="submit" loading={submitting} className="px-7 py-3">

@@ -59,6 +59,7 @@ entradas en `[Unreleased]`, citando la feature y la tarea, por ejemplo `(001/T03
 
 ### Fixed
 
+- Formularios de registrar y editar: los campos de tarifa y capacidad de cada tipo de vehículo ahora van en una tarjeta propia (autos a la izquierda, motos a la derecha) que aparece o desaparece con su check (002/T021).
 - El mapa de la 002 mostraba "API KEY REQUIRED": CARTO ahora exige clave. `MapBase` usa los mosaicos de OpenStreetMap, sin API key (002/T014).
 
 ### Changed
