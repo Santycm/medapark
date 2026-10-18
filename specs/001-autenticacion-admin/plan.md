@@ -173,4 +173,8 @@ UI en español). Las pruebas van junto al archivo (`*.test.ts[x]`).
 
 ## Complexity Tracking
 
-Sin violaciones de la constitución. No aplica.
+Sin violaciones de la constitución.
+
+| Adición | Por qué | Alternativa descartada |
+|---------|---------|------------------------|
+| `@vitest/coverage-v8` (dev) y workflow `.github/workflows/ci.yml` | El equipo exige una cobertura mínima de 70 % en cada PR (Principio IV). El CI corre lint, tipos, pruebas con cobertura y build en PR hacia `develop`/`main` | Medir la cobertura solo en local (no se puede exigir en el PR) |
