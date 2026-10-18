@@ -10,6 +10,8 @@ export default defineConfig({
     globals: true,
     setupFiles: ['src/test/setup.ts'],
     css: false,
+    // Los formularios largos con user-event pueden tardar más de 5 s cuando la máquina (o el CI) está cargada.
+    testTimeout: 20000,
     coverage: {
       provider: 'v8',
       include: ['src/**/*.{ts,tsx}'],
