@@ -1,8 +1,12 @@
+/**
+ * @deprecated Reemplazada por `components/public/ParkingDetailPanel` (feature 003): la ruta
+ * `/parking/:id` ahora redirige a `/?parqueadero=:id`. Se conserva por decisión del equipo.
+ */
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
 import { ArrowBigLeft, Bike, Car } from "lucide-react";
 
-import { getPublicParkingById, type PublicParking } from "../../services/parkings";
+import { getPublicParkingById, type PublicParkingRow } from "../../services/parkings";
 
 const formatCop = (value: number | null) => {
   if (value == null) {
@@ -19,7 +23,7 @@ const formatCop = (value: number | null) => {
 const ParkingDetail = () => {
   const { id } = useParams<{ id: string }>();
 
-  const [parking, setParking] = useState<PublicParking | null>(null);
+  const [parking, setParking] = useState<PublicParkingRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 

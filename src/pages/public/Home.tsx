@@ -1,103 +1,111 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router";
+import { useCallback, useEffect, useState } from 'react';
+import { useLocation, useSearchParams } from 'react-router';
+import Alert from '../../components/common/Alert';
+import Button from '../../components/common/Button';
+import ParkingMap from '../../components/map/ParkingMap';
+import ParkingDetailPanel from '../../components/public/ParkingDetailPanel';
+import ParkingList from '../../components/public/ParkingList';
+import type { PublicParking } from '../../domain/publicParking';
+import { MSG } from '../../lib/messages';
+import { listPublicParkings } from '../../services/parkings';
 
-import ParkingMap from "../../components/map/ParkingMap";
-import { getPublicParkings, type PublicParking } from "../../services/parkings";
+type LoadState = 'cargando' | 'error' | 'listo';
 
+/** HU9–HU11: mapa público con lista, detalle y "Cómo llegar". La selección vive en `?parqueadero=`. */
 const Home = () => {
+  const [params, setParams] = useSearchParams();
+  const [state, setState] = useState<LoadState>('cargando');
   const [parkings, setParkings] = useState<PublicParking[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [reload, setReload] = useState(0);
+  const notice = (useLocation().state as { notice?: string } | null)?.notice ?? '';
+
+  const selectedId = params.get('parqueadero');
+  const selected = parkings.find((p) => p.id === selectedId) ?? null;
 
   useEffect(() => {
     let cancelled = false;
-
-    const loadParkings = async () => {
-      setLoading(true);
-      setError("");
-
-      try {
-        const data = await getPublicParkings();
-
-        if (!cancelled) {
-          setParkings(data);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          console.error("Error al cargar los parqueaderos:", err);
-          setError("No fue posible cargar los parqueaderos.");
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+    const load = async () => {
+      const result = await listPublicParkings();
+      if (cancelled) return;
+      if (result.ok) {
+        setParkings(result.data);
+        setState('listo');
+      } else {
+        setState('error');
       }
     };
-
-    loadParkings();
-
+    void load();
     return () => {
       cancelled = true;
     };
   }, [reload]);
 
+  // Un id que ya no existe (o no está publicado) se avisa y se limpia de la URL.
+  useEffect(() => {
+    if (state === 'listo' && selectedId && !selected) {
+      setParams({}, { replace: true, state: { notice: MSG.publico.noDisponible } });
+    }
+  }, [state, selectedId, selected, setParams]);
+
+  const retry = () => {
+    setState('cargando');
+    setReload((value) => value + 1);
+  };
+
+  const select = useCallback(
+    (id: string) => setParams({ parqueadero: id }),
+    [setParams],
+  );
+  const close = useCallback(() => setParams({}), [setParams]);
+
+  useEffect(() => {
+    if (!selected) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') close();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [selected, close]);
+
   return (
-    <main className="min-h-screen bg-slate-100">
-      <header className="relative z-1000 border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
-          <div>
-            <h1 className="text-xl font-bold text-slate-900">MedaPark</h1>
+    <main className="mx-auto max-w-[1600px] space-y-4 px-4 py-5 sm:px-7">
+      <div>
+        <h1 className="text-3xl font-bold text-navy-900">{MSG.publico.titulo}</h1>
+        <p className="text-base text-ink-500">{MSG.publico.subtitulo}</p>
+      </div>
 
-            <p className="text-xs text-slate-500">Parqueaderos de Medellín</p>
-          </div>
+      {notice && <Alert kind="warning">{notice}</Alert>}
 
-          <Link
-            to="/admin/login"
-            className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
-          >
-            Acceso administradores
-          </Link>
+      {state === 'cargando' && (
+        <p role="status" className="py-16 text-center font-medium text-ink-500">
+          Cargando parqueaderos...
+        </p>
+      )}
+
+      {state === 'error' && (
+        <div className="mx-auto max-w-md space-y-4 rounded-2xl border border-line bg-white p-8 text-center">
+          <p className="text-navy-900">{MSG.publico.errorCarga}</p>
+          <Button onClick={retry}>{MSG.publico.reintentar}</Button>
         </div>
-      </header>
+      )}
 
-      <section className="relative h-[calc(100vh-73px)]">
-        {loading && (
-          <div className="absolute inset-0 z-500 flex items-center justify-center bg-slate-100">
-            <p className="text-sm font-medium text-slate-600">
-              Cargando parqueaderos...
-            </p>
+      {state === 'listo' && (
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_440px]">
+          <div className="h-[55dvh] min-h-[320px] lg:h-[calc(100dvh-190px)] lg:min-h-[520px]">
+            <ParkingMap parkings={parkings} selectedId={selectedId} onSelect={select} />
           </div>
-        )}
 
-        {!loading && error && (
-          <div className="absolute inset-0 z-500 flex items-center justify-center bg-slate-100 px-4">
-            <div className="rounded-2xl bg-white p-8 text-center shadow-sm">
-              <p className="text-slate-700">{error}</p>
-
-              <button
-                type="button"
-                onClick={() => setReload((value) => value + 1)}
-                className="mt-4 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
-              >
-                Reintentar
-              </button>
-            </div>
+          <div className="lg:h-[calc(100dvh-190px)] lg:min-h-[520px]">
+            {selected ? (
+              <ParkingDetailPanel key={selected.id} parking={selected} onClose={close} />
+            ) : (
+              <div className="rounded-[14px] border border-line bg-white lg:h-full">
+                <ParkingList parkings={parkings} selectedId={selectedId} onSelect={select} />
+              </div>
+            )}
           </div>
-        )}
-
-        {!loading && !error && parkings.length === 0 && (
-          <div className="absolute inset-0 z-500 flex items-center justify-center bg-slate-100 px-4">
-            <p className="rounded-xl bg-white p-6 text-center text-slate-600 shadow-sm">
-              No hay parqueaderos disponibles actualmente.
-            </p>
-          </div>
-        )}
-
-        {!loading && !error && parkings.length > 0 && (
-          <ParkingMap parkings={parkings} />
-        )}
-      </section>
+        </div>
+      )}
     </main>
   );
 };

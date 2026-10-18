@@ -1,69 +1,38 @@
-import { Marker, Popup } from "react-leaflet";
-import { Link } from "react-router";
-import L from "leaflet";
+import { useMemo } from 'react';
+import { Marker, Tooltip } from 'react-leaflet';
+import { isFull, type PublicParking } from '../../domain/publicParking';
+import { iconFor, type MarkerState } from './markerIcons';
 
-import markerIcon from "leaflet/dist/images/marker-icon.png";
-import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
-import markerShadow from "leaflet/dist/images/marker-shadow.png";
+type Props = {
+  parking: PublicParking;
+  selected: boolean;
+  onSelect: (id: string) => void;
+};
 
-import { Car, Bike } from "lucide-react";
+function markerStateOf(parking: PublicParking, selected: boolean): MarkerState {
+  if (selected) return 'seleccionado';
+  return isFull(parking) ? 'lleno' : 'disponible';
+}
 
-import type { PublicParking } from "../../services/parkings";
-
-const defaultIcon = L.icon({
-  iconUrl: markerIcon,
-  iconRetinaUrl: markerIcon2x,
-  shadowUrl: markerShadow,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
-
-const ParkingMarker = ({ parking }: { parking: PublicParking }) => {
-  const hasCars = (parking.car_total_spaces ?? 0) > 0;
-  const hasMotorcycles = (parking.motorcycle_total_spaces ?? 0) > 0;
+/** Marcador del mapa público: el clic selecciona (abre el detalle), sin popup. */
+const ParkingMarker = ({ parking, selected, onSelect }: Props) => {
+  const icon = useMemo(() => iconFor(markerStateOf(parking, selected)), [parking, selected]);
 
   return (
-    <Marker position={[parking.latitude, parking.longitude]} icon={defaultIcon}>
-      <Popup>
-        <div className="min-w-52">
-          <h3 className="text-base font-bold text-slate-900">{parking.name}</h3>
-
-          <p className="mt-1 text-sm text-slate-500">{parking.address}</p>
-
-          <div className="mt-3 space-y-2 text-sm text-slate-700">
-            {hasCars && (
-              <div className="flex items-center gap-2">
-                <Car size={16} strokeWidth={2} />
-
-                <span>
-                  <strong>{parking.car_available_spaces}</strong> carros
-                  disponibles
-                </span>
-              </div>
-            )}
-
-            {hasMotorcycles && (
-              <div className="flex items-center gap-2">
-                <Bike size={16} strokeWidth={2} />
-
-                <span>
-                  <strong>{parking.motorcycle_available_spaces}</strong> motos
-                  disponibles
-                </span>
-              </div>
-            )}
-          </div>
-
-          <Link
-            to={`/parking/${parking.id}`}
-            className="mt-4 block rounded-lg bg-slate-900 px-3 py-2 text-center text-sm font-semibold text-white transition hover:bg-slate-800"
-          >
-            Ver parqueadero
-          </Link>
-        </div>
-      </Popup>
+    <Marker
+      position={[parking.latitude, parking.longitude]}
+      icon={icon}
+      title={parking.name}
+      keyboard
+      zIndexOffset={selected ? 1000 : 0}
+      eventHandlers={{ click: () => onSelect(parking.id) }}
+    >
+      {selected && (
+        <Tooltip permanent direction="top" offset={[0, -46]} opacity={1}>
+          <strong className="block text-sm text-navy-900">{parking.name}</strong>
+          <span className="block text-xs text-ink-500">{parking.address}</span>
+        </Tooltip>
+      )}
     </Marker>
   );
 };

@@ -20,7 +20,7 @@ existen celdas individuales, placas ni historial de movimientos.
 
 **Dependencias**: feature 001 (sesión completa, layout administrativo y protección de rutas) y el **back
 existente** de Supabase, administrado por el equipo (`docs/supabase-esquema-actual.md`). El diseño funciona con el back
-tal como está, salvo los permisos de escritura de la solicitud **CB-001** (🔴 CRITICIDAD ALTA, pendiente de autorización).
+tal como está, sin cambios (la solicitud **CB-001** de permisos de escritura resultó no requerida).
 El back ya garantiza: un parqueadero por administrador, acceso solo del dueño con sesión completa,
 `0 ≤ ocupadas ≤ capacidad`, tarifa > 0, crear un tipo solo con capacidad > 0, eliminar un tipo solo con capacidad
 y ocupadas en 0, y el registro atómico de ingresos y salidas.
@@ -34,7 +34,7 @@ y ocupadas en 0, y el registro atómico de ingresos y salidas.
 - Q: ¿El formulario de registro/edición incluye mapa para ubicar el parqueadero? → A: sí, un mapa selector (clic o arrastre del marcador para llenar latitud y longitud), sin buscador ni geocodificación. Los campos de latitud y longitud siguen siendo editables a mano.
 - Q: ¿La configuración de celdas (HU6) tiene pantalla propia? → A: sí, la pantalla "Configurar celdas" con controles +/−, además de los campos de capacidad en los formularios de registro y edición.
 - Q: ¿Se registra la placa en la gestión de ocupación (HU7)? → A: no. Fuera de alcance.
-- Q: ¿Se puede modificar la base de datos para soportar esta feature? → A: el diseño se adapta al back existente. Cualquier cambio en el back es 🔴 CRITICIDAD ALTA y requiere un check de autorización (`docs/cambios-back/`). La única necesidad identificada es **CB-001** (permisos INSERT/UPDATE del administrador). Las reglas que el back no expresa se validan en el front.
+- Q: ¿Se puede modificar la base de datos para soportar esta feature? → A: el diseño se adapta al back existente. Cualquier cambio en el back es 🔴 CRITICIDAD ALTA y requiere un check de autorización (`docs/cambios-back/`). No hizo falta ningún cambio: la solicitud **CB-001** (permisos INSERT/UPDATE del administrador) resultó no requerida. Las reglas que el back no expresa se validan en el front.
 - Q: ¿Qué capacidad mínima tiene un tipo de vehículo al registrarlo o agregarlo? → A: 1 celda (HU6: "enteros mayores a cero"; el back no permite crear un tipo con 0). Un tipo existente sí puede bajar a 0 después (HU6), siempre que no tenga celdas ocupadas.
 - Q: ¿El guardado de la edición es atómico? → A: el back no ofrece una operación atómica para la edición, así que el front valida **todas** las reglas con datos recién leídos antes de escribir y guarda en un orden que minimiza los estados intermedios. Si un paso falla, se informa y se recarga la información.
 
@@ -175,7 +175,7 @@ de las ocupadas y guardar valores válidos; verificar el total y el panel.
 - **Registro duplicado** (dos pestañas pulsan "Guardar" en el registro a la vez): el back solo permite un parqueadero por cuenta; la segunda muestra "Ya tienes un parqueadero registrado." y redirige al panel.
 - **Registro incompleto**: si el parqueadero se crea pero falla el guardado de sus tipos de vehículo, se muestra "El parqueadero se registró, pero no se pudieron guardar los tipos de vehículo. Agrégalos desde Editar información." El panel muestra ese parqueadero con el aviso "Tu parqueadero no tiene tipos de vehículo configurados." y el acceso a "Editar información".
 - **Guardado parcial en la edición**: si un paso del guardado falla después de que otro tuvo éxito (red o permisos), se muestra "Algunos cambios no se pudieron guardar. Revisa la información e intenta nuevamente." y el formulario se recarga con los datos reales del servidor.
-- **Permisos del back**: si el back rechaza una operación por permisos, se muestra "No tienes permisos para realizar esta acción. Contacta al administrador del sistema." y no cambia nada en pantalla (se resuelve con la solicitud `docs/cambios-back/CB-001-permisos-escritura-admin.md`).
+- **Permisos del back**: si el back rechaza una operación por permisos, se muestra "No tienes permisos para realizar esta acción. Contacta al administrador del sistema." y no cambia nada en pantalla (el mensaje existe por seguridad; con los permisos actuales del back el administrador no lo ve en el flujo normal).
 - **Edición concurrente** en dos pestañas: gana la última en guardar (no hay bloqueo optimista en el MVP), excepto las reglas de capacidad y ocupación, que siempre se validan contra el valor actual del servidor.
 - **Ocupación cambió mientras se editaba la capacidad**: la validación "capacidad ≥ ocupadas" se evalúa en el servidor al guardar; si falla, se muestra el mensaje de HU6 y se recargan los valores.
 - **El mapa selector no carga** (sin internet hacia los mosaicos): el formulario sigue siendo usable escribiendo latitud y longitud a mano.
@@ -277,7 +277,7 @@ de las ocupadas y guardar valores válidos; verificar el total y el panel.
 - Moneda: pesos colombianos (COP), enteros, solo tarifa por hora (sin fracciones, días ni mensualidades).
 - El área de referencia "Medellín" para el aviso de coordenadas es el rectángulo aproximado del Valle de Aburrá: latitud 6.00–6.50, longitud −75.75 a −75.30.
 - No hay carga de datos de ejemplo desde este proyecto. El back ya tiene parqueaderos de prueba cargados por el equipo; para la demo se usan esos o se registran desde la aplicación.
-- El back debe conceder al administrador autenticado los permisos de creación y edición de su parqueadero: solicitud **CB-001** (🔴 CRITICIDAD ALTA, pendiente de autorización). Sin ella, US1, US4 y US5 muestran el mensaje de permisos.
+- El back ya permite al administrador autenticado crear y editar su parqueadero: la solicitud **CB-001** resultó no requerida (se verificó en la prueba manual).
 - La edición concurrente del mismo parqueadero en dos pestañas es improbable (un solo administrador); se acepta "gana el último" salvo las reglas de capacidad y ocupación.
 - No se requiere eliminar un parqueadero; para retirarlo de la consulta pública se usa el estado Inactivo.
 - El teléfono admite fijos y celulares colombianos sin indicativo (7 a 10 dígitos).

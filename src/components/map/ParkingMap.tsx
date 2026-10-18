@@ -1,39 +1,60 @@
-import {
-    MapContainer,
-    TileLayer,
-} from 'react-leaflet'
+import { useEffect, useRef } from 'react';
+import { useMap } from 'react-leaflet';
+import type { PublicParking } from '../../domain/publicParking';
+import MapLegend from '../public/MapLegend';
+import MapBase from './MapBase';
+import ParkingMarker from './ParkingMarker';
 
-import type { LatLngTuple } from 'leaflet'
+type Props = {
+  parkings: PublicParking[];
+  selectedId: string | null;
+  onSelect: (id: string) => void;
+};
 
-import type { PublicParking } from '../../services/parkings'
-import ParkingMarker from './ParkingMarker'
+/** Ajusta la vista a todos los parqueaderos (una vez), vuela a la selección y recalcula el tamaño. */
+function ViewController({ parkings, selectedId }: Omit<Props, 'onSelect'>) {
+  const map = useMap();
+  const fitted = useRef(false);
 
-const MEDELLIN_CENTER: LatLngTuple = [
-    6.2442,
-    -75.5812,
-]
+  useEffect(() => {
+    if (fitted.current || parkings.length === 0) return;
+    fitted.current = true;
+    map.fitBounds(
+      parkings.map((p) => [p.latitude, p.longitude] as [number, number]),
+      { padding: [40, 40], maxZoom: 15 },
+    );
+  }, [map, parkings]);
 
-const ParkingMap = ({ parkings }: { parkings: PublicParking[] }) => {
-    return (
-        <MapContainer
-            center={MEDELLIN_CENTER}
-            zoom={13}
-            scrollWheelZoom={true}
-            className="h-full w-full"
-        >
-            <TileLayer
-                attribution="&copy; OpenStreetMap contributors"
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
+  useEffect(() => {
+    const selected = parkings.find((p) => p.id === selectedId);
+    if (selected) map.flyTo([selected.latitude, selected.longitude], Math.max(map.getZoom(), 15));
+  }, [map, parkings, selectedId]);
 
-            {parkings.map((parking) => (
-                <ParkingMarker
-                    key={parking.id}
-                    parking={parking}
-                />
-            ))}
-        </MapContainer>
-    )
+  useEffect(() => {
+    const container = map.getContainer();
+    const observer = new ResizeObserver(() => map.invalidateSize());
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [map]);
+
+  return null;
 }
 
-export default ParkingMap
+const ParkingMap = ({ parkings, selectedId, onSelect }: Props) => (
+  <div className="relative h-full w-full">
+    <MapBase aria-label="Mapa de parqueaderos de Medellín" className="h-full w-full rounded-[14px]">
+      <ViewController parkings={parkings} selectedId={selectedId} />
+      {parkings.map((parking) => (
+        <ParkingMarker
+          key={parking.id}
+          parking={parking}
+          selected={parking.id === selectedId}
+          onSelect={onSelect}
+        />
+      ))}
+    </MapBase>
+    <MapLegend />
+  </div>
+);
+
+export default ParkingMap;

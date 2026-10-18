@@ -24,10 +24,7 @@ Formato *Decision / Rationale / Alternatives considered*. No quedan `NEEDS CLARI
   - crear un tipo exige `total_spaces > 0` → capacidad mínima 1 al registrar o agregar un tipo;
   - borrar un tipo exige `total_spaces = 0` y `occupied_spaces = 0`;
   - `0 ≤ occupied_spaces ≤ total_spaces` (`CHECK`).
-- **Dependencia externa**: hoy el rol `authenticated` no tiene privilegios `INSERT`/`UPDATE` en esas tablas
-  (solicitud `docs/cambios-back/CB-001-permisos-escritura-admin.md`, 🔴 ALTA, pendiente de autorización). Hasta que se aplique, el front
-  muestra `MSG.general.permisoDenegado` en esas operaciones.
-- **Alternatives considered**: RPC transaccionales nuevas (posibles como un CB-NNN autorizado, pero se
+- **Dependencia externa**: ninguna. Se asumió que `authenticated` no tenía `INSERT`/`UPDATE` (solicitud `docs/cambios-back/CB-001-permisos-escritura-admin.md`), pero la prueba contra el back real mostró que el registro y la edición funcionan sin aplicarla (**CB-001 no requerida**). El front conserva `MSG.general.permisoDenegado` ante un `42501`.
   descartan para el MVP para minimizar los cambios de criticidad ALTA).
 
 ## R3. Atomicidad sin RPC (registro y edición)

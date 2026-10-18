@@ -186,6 +186,5 @@ ingreso. No se enlazan desde la UI del MVP.
 El back ya implementa el modelo: `parking_lots` (1 por admin, `status` booleano), `parking_vehicle_configs`
 (`CAR`/`MOTORCYCLE`, tarifa, capacidad y ocupadas con `CHECK`), RLS por dueño + `aal2`, la vista pública
 `public_parking_lots` con la regla de publicabilidad y las RPC atómicas de ingreso y salida. El front se
-adapta a él. La única brecha identificada (permisos de escritura del admin) es la solicitud **CB-001**
-(🔴 CRITICIDAD ALTA, pendiente de autorización). Ver `docs/supabase-esquema-actual.md` §3–§4 y
+adapta a él. No quedan brechas: la solicitud **CB-001** (permisos INSERT/UPDATE) resultó **no requerida**: el registro, la consulta y la edición funcionaron contra el back real sin aplicarla. Ver `docs/supabase-esquema-actual.md` §3–§4 y
 `docs/cambios-back/`.

@@ -3,7 +3,7 @@
 | Campo | Valor |
 |-------|-------|
 | **Criticidad** | 🔴 **ALTA** |
-| **Estado** | ⏳ **Pendiente de autorización** (no ejecutado) |
+| **Estado** | ✅ **No requerida** (verificado en la prueba manual de la feature 002; no se ejecutó) |
 | **Solicitado por** | Claude Code (sesión SDD) · 2026-10-17 |
 | **Feature / HU** | `specs/002-gestion-parqueadero` · HU3 (registrar), HU5 (editar), HU6 (configurar celdas) |
 | **Migración** | `supabase/migrations/<timestamp>_cb_001_permisos_escritura_admin.sql`. Se crea **solo** cuando la autorización esté aprobada |

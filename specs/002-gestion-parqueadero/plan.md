@@ -21,7 +21,7 @@ Front de la gestión del parqueadero (HU3–HU7) sobre el **back existente sin c
 
 **Primary Dependencies**: las del repo + las agregadas en la 001 (react-hook-form, zod, vitest). Mapas con `leaflet` 1.9 + `react-leaflet` 5 (ya instalados). Ninguna dependencia nueva
 
-**Storage**: Supabase (`parking_lots`, `parking_vehicle_configs` y RPC de ocupación) tal como está, más CB-001 (permisos, 🔴 ALTA, pendiente de autorización)
+**Storage**: Supabase (`parking_lots`, `parking_vehicle_configs` y RPC de ocupación) tal como está, sin cambios (CB-001 resultó no requerida)
 
 **Testing**: Vitest + Testing Library con `supabase` simulado; validación manual con `quickstart.md`
 
@@ -31,7 +31,7 @@ Front de la gestión del parqueadero (HU3–HU7) sobre el **back existente sin c
 
 **Performance Goals**: ingreso o salida reflejados en menos de 2 s (SC-002); panel en menos de 2 s
 
-**Constraints**: cambios en el back solo vía CB-NNN autorizado (🔴 CRITICIDAD ALTA, `docs/cambios-back/`); respetar las políticas existentes (capacidad ≥ 1 al crear un tipo, borrar solo en 0); las escrituras de HU3/HU5/HU6 dependen de **CB-001** (pendiente de autorización)
+**Constraints**: cambios en el back solo vía CB-NNN autorizado (🔴 CRITICIDAD ALTA, `docs/cambios-back/`); respetar las políticas existentes (capacidad ≥ 1 al crear un tipo, borrar solo en 0); las escrituras de HU3/HU5/HU6 funcionan con los permisos actuales (CB-001 resultó no requerida)
 
 **Scale/Scope**: menos de 50 parqueaderos; 5 pantallas o estados
 
@@ -42,7 +42,7 @@ Front de la gestión del parqueadero (HU3–HU7) sobre el **back existente sin c
 | Principio | Cómo se cumple | Estado |
 |-----------|----------------|--------|
 | I. HU como fuente de verdad | FR trazados a HU3–HU7; *Desviaciones* (capacidad mínima 1 al crear, edición no atómica) documentadas | ✅ |
-| II. Seguridad y control de cambios del back | Se usan las tablas, la RLS y las RPC existentes; las reglas no expresadas en el back se validan en el front (`docs/supabase-esquema-actual.md` §3); el único cambio del back necesario está en la solicitud CB-001 (🔴 ALTA, con check de autorización) | ✅ |
+| II. Seguridad y control de cambios del back | Se usan las tablas, la RLS y las RPC existentes; las reglas no expresadas en el back se validan en el front (`docs/supabase-esquema-actual.md` §3); no hizo falta ningún cambio en el back (CB-001 resultó no requerida) | ✅ |
 | III. Simplicidad y reutilización | Context + funciones puras; reutiliza `react-leaflet` y `ParkingMap` del repo; sin librerías de datos | ✅ |
 | IV. Reglas verificables | Vitest para `validateEdit`, `diffConfigs`, publicabilidad, esquemas, mapeos, errores, el orden de escritura del servicio y las páginas | ✅ |
 | V. UX en español y fiel | Pantallas según HU03–HU07 (`contracts/ui.md`); `formatCOP`; `aria-live` en los conteos | ✅ |

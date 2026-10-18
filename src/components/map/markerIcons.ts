@@ -21,3 +21,6 @@ export function markerIcon(state: MarkerState = 'disponible'): L.DivIcon {
     popupAnchor: [0, -Math.round(size * 1.2)],
   });
 }
+
+/** Ícono del marcador según el estado del parqueadero. */
+export const iconFor = markerIcon;

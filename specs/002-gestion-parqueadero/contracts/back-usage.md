@@ -1,7 +1,6 @@
 # Contrato: uso del back existente (002)
 
-El diseño usa el back **tal como está** (`docs/supabase-esquema-actual.md`), más los permisos de la solicitud
-**CB-001** (🔴 CRITICIDAD ALTA, pendiente de autorización). Este contrato fija exactamente cómo lo usa el
+El diseño usa el back **tal como está** (`docs/supabase-esquema-actual.md`), sin cambios: la solicitud **CB-001** (permisos INSERT/UPDATE) resultó **no requerida**: el registro, la consulta y la edición funcionaron contra el back real sin aplicarla. Este contrato fija exactamente cómo lo usa el
 front: consultas, payloads, orden de escritura y mapeo de errores. Todas las llamadas usan el cliente tipado
 `supabase` de `src/lib/supabase.ts` (`Database` generado).
 
