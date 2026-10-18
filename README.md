@@ -44,10 +44,16 @@ Para implementar con Claude Code: crear la rama de la feature desde `develop`, a
 
 ```bash
 npm install
-npm run dev
+cp .env.example .env     # completar VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY (el .env no se versiona)
+npm run dev              # http://localhost:5173
 ```
 
-Requiere un archivo `.env` (no versionado) con `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`.
+Scripts: `npm run lint` · `npm run typecheck` · `npm test` (Vitest, con Supabase simulado) · `npm run build` ·
+`npm run format` · `npm run gen:types` (solo lectura; requiere `npx supabase login`).
+
+Antes de abrir un PR deben pasar `lint`, `typecheck`, `test` y `build`. Los PR van a `develop`, nunca a `main`.
+Todo cambio en el back de Supabase es de 🔴 CRITICIDAD ALTA y requiere el check de autorización
+(`docs/cambios-back/README.md`).
 
 ## Documentación fuente
 

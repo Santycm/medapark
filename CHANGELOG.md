@@ -10,6 +10,18 @@ entradas en `[Unreleased]`, citando la feature y la tarea, por ejemplo `(001/T03
 
 ### Added
 
+- Mocks de Pencil (`design/mocks/`, 13 pantallas): 001 (login, MFA verificar y configurar, layout admin con modal de cierre de sesión, 404), 002 (panel, panel vacío, registrar, editar, configurar celdas, gestionar ocupación) y 003 (mapa con lista y detalle) (001/T014). El archivo `design/medapark.pen` debe guardarse desde Pencil.
+- Feature 001 (autenticación del administrador):
+  - migración de `src/` a TypeScript estricto, con Vitest, ESLint TS y Prettier (001/T002–T013);
+  - tokens de diseño `@theme`, fuente Inter y kit de UI (`Button`, `TextField`, `PasswordField`, `Alert`,
+    `Modal`, `Card`, `Logo`) y layouts `AuthLayout`, `AdminLayout` y `PublicLayout` (001/T015, T018, T019);
+  - `lib/messages`, `lib/errors`, `lib/result`, `lib/env` y tipos de Supabase generados (001/T004, T005, T016, T017);
+  - login HU1 con react-hook-form + Zod y mensajes literales (001/T027–T031);
+  - MFA TOTP **obligatorio**: enrolamiento y verificación con límite de 5 intentos (001/T032–T038);
+  - cierre de sesión con confirmación (HU8), `AuthProvider`, `useAuth` y guards por etapa de autenticación
+    (001/T020–T026, T039–T042);
+  - rutas `/admin/...`, redirecciones de `/login` y `/verify-mfa`, `Panel` provisional y `NotFound` (001/T025).
+
 - 🔴 **Control de cambios del back con CRITICIDAD ALTA**: proceso obligatorio con check de autorización
   explícito (`docs/cambios-back/README.md`), plantilla de solicitud y **CB-001** (permisos INSERT/UPDATE del
   administrador, ⏳ pendiente de autorización, no ejecutado).
@@ -38,6 +50,11 @@ entradas en `[Unreleased]`, citando la feature y la tarea, por ejemplo `(001/T03
 
 ### Changed
 
+- Pantallas MFA sin barra superior (el logo ya está en el panel) y ajustadas al alto de la ventana con unidades vh/vw; el login también se ajusta al alto sin scroll (001/T030, T037, T038).
+- UI de la 001 ajustada a los mocks de Pencil (`design/mocks/`): login con foto y tarjeta grande, `MfaLayout` con panel de marca y pasos, casillas separadas para el código, logos con fondo transparente y estilos del encabezado, menú y diálogo de cierre de sesión (001/T030, T037, T038, T041).
+- El botón "Administración" del mapa pasa a "Acceso administradores" (`/admin/login`) (001/T025).
+- `ProtectedRoute` queda `@deprecated` (se conserva) (001/T044).
+- El login ya no muestra "¿Olvidaste tu contraseña?"; la ruta latente se conserva (001/T030).
 - Constitución 3.0.0: el equipo administra el back; todo cambio en él es de CRITICIDAD ALTA con check de
   autorización (antes: back externo de solo lectura). `AGENTS.md` §2.1, plantilla de PR, instrucciones de
   Copilot y `.claude/settings.json` (ahora pide confirmación en los comandos de escritura de Supabase)
