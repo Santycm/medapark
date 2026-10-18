@@ -10,5 +10,26 @@ export default defineConfig({
     globals: true,
     setupFiles: ['src/test/setup.ts'],
     css: false,
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: [
+        'src/**/*.test.{ts,tsx}',
+        'src/test/**',
+        'src/main.tsx',
+        'src/App.tsx',
+        'src/vite-env.d.ts',
+        'src/lib/database.types.ts',
+        // Pantallas y componentes del repo original, conservados sin cambios funcionales
+        // (rutas latentes, @deprecated) o que la feature 003 rediseña. Se miden cuando se toquen.
+        'src/components/auth/{AuthAlert,AuthButton,AuthCard,AuthInput,AuthMessage,ProtectedRoute}.tsx',
+        'src/components/map/**',
+        'src/pages/app/Profile.tsx',
+        'src/pages/auth/{ForgotPassword,SetupMfa,UpdatePassword}.tsx',
+        'src/pages/public/**',
+      ],
+      reporter: ['text', 'text-summary', 'json-summary', 'lcov'],
+      thresholds: { statements: 70, branches: 70, functions: 70, lines: 70 },
+    },
   },
 });

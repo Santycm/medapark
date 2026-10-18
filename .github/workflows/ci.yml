@@ -1,0 +1,56 @@
+name: CI
+
+# Calidad obligatoria de cada PR (AGENTS.md §5): lint, tipos, pruebas con cobertura mínima de 70 % y build.
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Lint, tipos, pruebas y build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Tipos (TypeScript)
+        run: npm run typecheck
+
+      # Falla si la cobertura global baja del 70 % (umbrales en vite.config.ts).
+      - name: Pruebas unitarias con cobertura
+        run: npm run test:coverage
+
+      - name: Resumen de cobertura
+        if: always()
+        run: node scripts/coverage-summary.mjs >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Subir informe de cobertura
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/
+          retention-days: 7
+
+      - name: Build
+        run: npm run build

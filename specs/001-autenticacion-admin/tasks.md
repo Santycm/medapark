@@ -105,6 +105,7 @@ description: "Task list for 001-autenticacion-admin (sobre el repo existente San
 - [X] T046 [P] Actualizar `README.md` (sección "Desarrollo": `.env`, scripts, Gitflow, control de cambios del back con CRITICIDAD ALTA)
 - [X] T047 `npm run lint`, `npm run typecheck`, `npm test` y `npm run build` en verde
 - [ ] T048 Validación manual completa de `quickstart.md` y resultados en `specs/001-autenticacion-admin/checklists/validacion-manual.md`
+- [X] T050 [P] CI en GitHub Actions (`.github/workflows/ci.yml`): lint, typecheck, pruebas con cobertura mínima de 70 % (umbral en `vite.config.ts`) y build en cada PR a `develop`/`main`; pruebas adicionales del router, `AdminLayout`, `Modal`, `authContext` y `parkings`
 - [ ] T049 Abrir un PR `feature/001-autenticacion-admin` → `develop` (nunca a `main`)
 
 ---
