@@ -1,0 +1,9 @@
+node_modules
+dist
+coverage
+package-lock.json
+src/lib/database.types.ts
+.specify
+.claude
+docs
+specs

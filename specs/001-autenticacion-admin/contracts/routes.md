@@ -11,8 +11,8 @@ layouts y guards, sin cambiar la matriz de acceso.
 |------|--------|--------|-------|
 | `/` | `pages/public/Home` (existente; la 003 lo rediseña) | sin layout (como hoy); la 003 lo pasa a `PublicLayout` | ninguno |
 | `/admin/login` | `pages/auth/Login` (rediseñado) | `AuthLayout` | `RedirectIfAuthenticated` |
-| `/admin/mfa/configurar` | `pages/auth/MfaEnroll` (nuevo) | `AuthLayout` | `RequirePendingMfa expected="requiere_enrolamiento"` |
-| `/admin/mfa/verificar` | `pages/auth/VerifyMfa` (rediseñado) | `AuthLayout` | `RequirePendingMfa expected="requiere_verificacion"` |
+| `/admin/mfa/configurar` | `pages/auth/MfaEnroll` (nuevo) | `MfaLayout` | `RequirePendingMfa expected="requiere_enrolamiento"` |
+| `/admin/mfa/verificar` | `pages/auth/VerifyMfa` (rediseñado) | `MfaLayout` | `RequirePendingMfa expected="requiere_verificacion"` |
 | `/admin` | `pages/app/Panel` (placeholder; la 002 lo reemplaza por HU4) | `AdminLayout` | `RequireAal2` |
 | `/admin/*` (no definida) | `pages/NotFound` | `AdminLayout` | `RequireAal2` |
 | `*` | `pages/NotFound` | — | ninguno |
