@@ -6,6 +6,8 @@ import AdminLayout from "../components/layout/AdminLayout";
 import AuthLayout from "../components/layout/AuthLayout";
 import MfaLayout from "../components/layout/MfaLayout";
 import RedirectIfAuthenticated from "./guards/RedirectIfAuthenticated";
+import RequireNoParking from "./guards/RequireNoParking";
+import RequireParking from "./guards/RequireParking";
 import RequireAal2 from "./guards/RequireAal2";
 import RequirePendingMfa from "./guards/RequirePendingMfa";
 
@@ -19,6 +21,10 @@ const UpdatePassword = lazy(() => import("../pages/auth/UpdatePassword"));
 const SetupMfa = lazy(() => import("../pages/auth/SetupMfa"));
 const Profile = lazy(() => import("../pages/app/Profile"));
 const Panel = lazy(() => import("../pages/app/Panel"));
+const RegisterParking = lazy(() => import("../pages/app/RegisterParking"));
+const EditParking = lazy(() => import("../pages/app/EditParking"));
+const ConfigureSpaces = lazy(() => import("../pages/app/ConfigureSpaces"));
+const ManageOccupancy = lazy(() => import("../pages/app/ManageOccupancy"));
 const NotFound = lazy(() => import("../pages/NotFound"));
 
 const AppRouter = () => {
@@ -51,6 +57,14 @@ const AppRouter = () => {
         <Route element={<RequireAal2 />}>
           <Route element={<AdminLayout />}>
             <Route path="/admin" element={<Panel />} />
+            <Route element={<RequireNoParking />}>
+              <Route path="/admin/parqueadero/registrar" element={<RegisterParking />} />
+            </Route>
+            <Route element={<RequireParking />}>
+              <Route path="/admin/parqueadero/editar" element={<EditParking />} />
+              <Route path="/admin/parqueadero/celdas" element={<ConfigureSpaces />} />
+              <Route path="/admin/ocupacion" element={<ManageOccupancy />} />
+            </Route>
             <Route path="/admin/*" element={<NotFound />} />
           </Route>
 
