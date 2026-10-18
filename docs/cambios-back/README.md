@@ -50,4 +50,4 @@ Si algo falla al aplicar, se ejecuta la **reversión** de la solicitud y se avis
 
 | ID | Título | Criticidad | Estado | Autorizado por | Fecha |
 |----|--------|-----------|--------|----------------|-------|
-| [CB-001](CB-001-permisos-escritura-admin.md) | Permisos INSERT/UPDATE del administrador sobre su parqueadero | 🔴 ALTA | ⏳ Pendiente de autorización | — | — |
+| [CB-001](CB-001-permisos-escritura-admin.md) | Permisos INSERT/UPDATE del administrador sobre su parqueadero | 🔴 ALTA | ✅ No requerida (verificado en la prueba manual; no se ejecutó) | — | 2026-10-17 |

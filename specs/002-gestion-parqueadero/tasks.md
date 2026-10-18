@@ -10,7 +10,7 @@ description: "Task list for 002-gestion-parqueadero (back existente; cambios del
 
 **Tests**: OBLIGATORIAS (Principio IV): Vitest con `supabase` simulado. Nada contra el Supabase remoto.
 
-**⚠️ Reglas**: cambios en el back solo vía CB-NNN autorizado (🔴 CRITICIDAD ALTA, `docs/cambios-back/`) (esta feature solo depende de **CB-001**, que no se ejecuta sin autorización); respetar las políticas del back (capacidad ≥ 1 al crear un tipo; borrar un tipo solo con capacidad y ocupadas en 0); no hacer push a `main`.
+**⚠️ Reglas**: cambios en el back solo vía CB-NNN autorizado (🔴 CRITICIDAD ALTA, `docs/cambios-back/`) (esta feature no requirió ningún cambio: CB-001 resultó no requerida); respetar las políticas del back (capacidad ≥ 1 al crear un tipo; borrar un tipo solo con capacidad y ocupadas en 0); no hacer push a `main`.
 
 **Organization**: US1 = HU3 Registrar (P1), US2 = HU4 Panel (P1), US3 = HU7 Ocupación (P2), US4 = HU5 Editar (P2), US5 = HU6 Celdas (P3).
 

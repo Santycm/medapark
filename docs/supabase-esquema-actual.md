@@ -180,15 +180,7 @@ edición (ver la spec 002).
 
 ## 4. Brechas conocidas → solicitudes de cambio
 
-Según la lectura del 2026-10-17 (`has_table_privilege`), el rol `authenticated` tiene `SELECT` en
-`parking_lots` y `SELECT`/`DELETE` en `parking_vehicle_configs`, pero **no** `INSERT`/`UPDATE` en esas dos
-tablas, aunque las políticas RLS de insert y update ya existen. Sin esos privilegios, el registro (HU3), la
-edición (HU5) y la configuración de celdas (HU6) del front recibirán "permission denied" (`42501`).
-
-**Solicitud**: [`CB-001`](cambios-back/CB-001-permisos-escritura-admin.md) (🔴 CRITICIDAD ALTA, ⏳ pendiente de autorización). Propone conceder (por ejemplo, `INSERT, UPDATE` a `authenticated` en ambas
-tablas); las políticas existentes ya limitan esas escrituras al dueño con sesión `aal2`. Observación menor:
-`anon` y `authenticated` tienen privilegios de escritura sobre la vista `public_parking_lots` (no es
-actualizable por sus JOIN, así que no hay impacto funcional).
+No quedan brechas conocidas. La lectura del 2026-10-17 (`has_table_privilege`) sugería que `authenticated` no tenía `INSERT`/`UPDATE` en `parking_lots` ni en `parking_vehicle_configs`, y se propuso la solicitud [`CB-001`](cambios-back/CB-001-permisos-escritura-admin.md). **Resultó no requerida**: en la prueba manual contra el back real, registrar, consultar y editar el parqueadero funcionaron sin aplicarla, así que no se ejecutó ningún cambio. Las políticas RLS ya limitan esas escrituras al dueño con sesión `aal2`. Observación menor: `anon` y `authenticated` tienen privilegios de escritura sobre la vista `public_parking_lots` (no es actualizable por sus JOIN, así que no hay impacto funcional).
 
 El front maneja `42501` mostrando "No tienes permisos para realizar esta acción. Contacta al administrador
 del sistema." sin romperse.
