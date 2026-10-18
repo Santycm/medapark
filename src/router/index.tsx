@@ -1,10 +1,11 @@
 import { Suspense, lazy } from "react";
-import { Navigate, Route, Routes } from "react-router";
+import { Navigate, Route, Routes, useParams } from "react-router";
 
 import Loader from "../components/common/Loader";
 import AdminLayout from "../components/layout/AdminLayout";
 import AuthLayout from "../components/layout/AuthLayout";
 import MfaLayout from "../components/layout/MfaLayout";
+import PublicLayout from "../components/layout/PublicLayout";
 import RedirectIfAuthenticated from "./guards/RedirectIfAuthenticated";
 import RequireNoParking from "./guards/RequireNoParking";
 import RequireParking from "./guards/RequireParking";
@@ -12,7 +13,6 @@ import RequireAal2 from "./guards/RequireAal2";
 import RequirePendingMfa from "./guards/RequirePendingMfa";
 
 const Home = lazy(() => import("../pages/public/Home"));
-const ParkingDetail = lazy(() => import("../pages/public/ParkingDetail"));
 const Login = lazy(() => import("../pages/auth/Login"));
 const MfaEnroll = lazy(() => import("../pages/auth/MfaEnroll"));
 const VerifyMfa = lazy(() => import("../pages/auth/VerifyMfa"));
@@ -27,12 +27,20 @@ const ConfigureSpaces = lazy(() => import("../pages/app/ConfigureSpaces"));
 const ManageOccupancy = lazy(() => import("../pages/app/ManageOccupancy"));
 const NotFound = lazy(() => import("../pages/NotFound"));
 
+/** `/parking/:id` (URL antigua) → el detalle ahora vive en `/?parqueadero=:id`. */
+const ParkingRedirect = () => {
+  const { id } = useParams();
+  return <Navigate to={id ? `/?parqueadero=${encodeURIComponent(id)}` : "/"} replace />;
+};
+
 const AppRouter = () => {
   return (
     <Suspense fallback={<Loader />}>
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/parking/:id" element={<ParkingDetail />} />
+        <Route element={<PublicLayout />}>
+          <Route path="/" element={<Home />} />
+        </Route>
+        <Route path="/parking/:id" element={<ParkingRedirect />} />
 
         {/* Compatibilidad con URLs ya publicadas */}
         <Route path="/login" element={<Navigate to="/admin/login" replace />} />

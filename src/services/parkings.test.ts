@@ -17,7 +17,8 @@ vi.mock('../lib/supabase', () => {
   return { supabase: { from: () => builder } };
 });
 
-import { getPublicParkingById, getPublicParkings } from './parkings';
+import { MSG } from '../lib/messages';
+import { getPublicParkingById, getPublicParkings, listPublicParkings } from './parkings';
 
 const row = (overrides: Record<string, unknown> = {}) => ({
   id: 'p1',
@@ -72,5 +73,43 @@ describe('getPublicParkingById', () => {
     const error = { code: 'x' };
     query.result = { data: null, error };
     await expect(getPublicParkingById('p1')).rejects.toBe(error);
+  });
+});
+
+describe('listPublicParkings', () => {
+  const full = (overrides: Record<string, unknown> = {}) =>
+    row({
+      address: 'Calle 1',
+      phone: '3001234567',
+      opening_hours: '24 horas',
+      car_hourly_rate: 5000,
+      car_total_spaces: 4,
+      car_available_spaces: 2,
+      motorcycle_total_spaces: null,
+      ...overrides,
+    });
+
+  it('mapea al dominio, descarta las filas incompletas y ordena por nombre', async () => {
+    query.result = {
+      data: [full({ id: 'b', name: 'Zona' }), full({ id: 'a', name: 'Ángel' }), full({ id: null })],
+      error: null,
+    };
+    const result = await listPublicParkings();
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.data.map((p) => p.name)).toEqual(['Ángel', 'Zona']);
+      expect(result.data[0].offers).toEqual([
+        { vehicle_type: 'CAR', hourly_rate: 5000, total_spaces: 4, available_spaces: 2 },
+      ]);
+    }
+  });
+
+  it('sin datos devuelve una lista vacía', async () => {
+    expect(await listPublicParkings()).toEqual({ ok: true, data: [] });
+  });
+
+  it('un error no lanza: devuelve RED con el mensaje de carga', async () => {
+    query.result = { data: null, error: { code: 'x' } };
+    expect(await listPublicParkings()).toEqual({ ok: false, code: 'RED', message: MSG.publico.errorCarga });
   });
 });

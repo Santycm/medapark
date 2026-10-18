@@ -15,6 +15,11 @@ vi.mock('../services/adminParking', () => ({
   getMyParkingLot: vi.fn().mockResolvedValue({ ok: true, data: null }),
 }));
 
+vi.mock('../components/map/ParkingMap', () => ({ default: () => <div data-testid="mapa" /> }));
+vi.mock('../services/parkings', () => ({
+  listPublicParkings: vi.fn().mockResolvedValue({ ok: true, data: [] }),
+}));
+
 import { renderWithAuth } from '../test/renderWithAuth';
 import AppRouter from './index';
 
@@ -69,5 +74,17 @@ describe('AppRouter', () => {
   it('una ruta pública inexistente enlaza al inicio', async () => {
     at('/nada', 'anonimo');
     expect(await screen.findByRole('link', { name: 'Volver al inicio' })).toHaveAttribute('href', '/');
+  });
+
+  it('/ muestra el mapa público con el encabezado público', async () => {
+    at('/', 'anonimo');
+    expect(await screen.findByRole('heading', { name: 'Mapa de parqueaderos' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Acceso administradores/ })).toHaveAttribute('href', '/admin/login');
+    expect(await screen.findByTestId('mapa')).toBeInTheDocument();
+  });
+
+  it('/parking/:id redirige a /?parqueadero=:id', async () => {
+    at('/parking/abc-123', 'anonimo');
+    expect(await screen.findByText('Este parqueadero ya no está disponible.')).toBeInTheDocument();
   });
 });

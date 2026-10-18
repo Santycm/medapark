@@ -66,4 +66,20 @@ export const MSG = {
     salidaRegistrada: 'Salida registrada',
     info: 'La disponibilidad se actualiza al registrar ingresos o salidas. Los cambios se reflejarán en el panel de gestión y en la vista pública del parqueadero.',
   },
+  publico: {
+    titulo: 'Mapa de parqueaderos',
+    subtitulo:
+      'Consulta los parqueaderos registrados y selecciona uno para ver su información detallada.',
+    listaTitulo: (n: number) => `Parqueaderos activos (${n})`,
+    vacio: 'Aún no hay parqueaderos disponibles.',
+    errorCarga: 'No fue posible cargar los parqueaderos. Intenta nuevamente.',
+    reintentar: 'Reintentar',
+    noDisponible: 'Este parqueadero ya no está disponible.',
+    sinCeldas: 'Sin celdas disponibles',
+    notaUltimoEstado:
+      'La información mostrada corresponde al último estado registrado por el administrador.',
+    comoLlegar: 'Cómo llegar',
+    leyendaDisponible: 'Parqueadero con celdas disponibles',
+    leyendaLleno: 'Parqueadero sin celdas disponibles',
+  },
 } as const;

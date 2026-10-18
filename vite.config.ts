@@ -28,7 +28,7 @@ export default defineConfig({
         'src/components/map/**',
         'src/pages/app/Profile.tsx',
         'src/pages/auth/{ForgotPassword,SetupMfa,UpdatePassword}.tsx',
-        'src/pages/public/**',
+        'src/pages/public/ParkingDetail.tsx',
       ],
       reporter: ['text', 'text-summary', 'json-summary', 'lcov'],
       thresholds: { statements: 70, branches: 70, functions: 70, lines: 70 },

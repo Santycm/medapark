@@ -10,6 +10,12 @@ entradas en `[Unreleased]`, citando la feature y la tarea, por ejemplo `(001/T03
 
 ### Added
 
+- Feature 003 (consulta pública, HU9–HU11), sobre la vista existente `public_parking_lots` (sin cambios en el back):
+  - dominio `publicParking` (mapeo de la vista, `googleMapsUrl`, `isFull`, resumen y orden) y `listPublicParkings` (003/T003–T007);
+  - mapa con marcadores verde, gris y azul, leyenda, `fitBounds`/`flyTo` y tooltip del seleccionado; lista "Parqueaderos activos (N)" y panel de detalle (003/T008–T016);
+  - selección en la URL (`/?parqueadero=<id>`), con aviso si el id ya no existe, Esc y "Atrás"; `/parking/:id` redirige a la nueva URL (003/T014, T016);
+  - botón "Cómo llegar" a Google Maps (`maps/dir`, pestaña nueva) solo con coordenadas válidas (003/T017, T018);
+  - encabezado público con "Acceso administradores"; 45 pruebas nuevas.
 - Feature 002 (gestión del parqueadero, HU3–HU7), sobre el back existente:
   - dominio puro (`domain/parking`, esquemas Zod y mapeo del formulario) y `lib/format` (002/T003–T007, T016–T019);
   - servicio `adminParking` con validación previa y orden de escritura seguro, y `parkingErrors` (002/T007–T009);
@@ -17,7 +23,7 @@ entradas en `[Unreleased]`, citando la feature y la tarea, por ejemplo `(001/T03
   - componentes `Checkbox`, `RadioCard`, `NumberStepper`, `Badge`, `Breadcrumbs`, `MapBase`, `LocationPicker` y `ParkingForm` (002/T013, T014, T020, T021);
   - pantallas: panel "Mi parqueadero" (HU4), registrar (HU3), editar (HU5), configurar celdas (HU6) y gestionar ocupación (HU7) (002/T022–T033);
   - 161 pruebas nuevas (298 en total); cobertura global de 93 %.
-  - ⚠️ Registrar, editar y configurar celdas necesitan la solicitud **CB-001** (permisos INSERT/UPDATE, 🔴 CRITICIDAD ALTA), **pendiente de autorización y no ejecutada**. Mientras tanto la app muestra "No tienes permisos para realizar esta acción…".
+  - No requirió cambios en el back: la solicitud **CB-001** (permisos INSERT/UPDATE) resultó no requerida; registrar, consultar y editar funcionan con los permisos actuales.
 - CI en GitHub Actions (`.github/workflows/ci.yml`): lint, typecheck, pruebas con cobertura mínima de 70 % y build en cada PR a `develop` o `main`; script `npm run test:coverage` (001/T050).
 - Mocks de Pencil (`design/mocks/`, 13 pantallas): 001 (login, MFA verificar y configurar, layout admin con modal de cierre de sesión, 404), 002 (panel, panel vacío, registrar, editar, configurar celdas, gestionar ocupación) y 003 (mapa con lista y detalle) (001/T014). El archivo `design/medapark.pen` debe guardarse desde Pencil.
 - Feature 001 (autenticación del administrador):
@@ -32,8 +38,7 @@ entradas en `[Unreleased]`, citando la feature y la tarea, por ejemplo `(001/T03
   - rutas `/admin/...`, redirecciones de `/login` y `/verify-mfa`, `Panel` provisional y `NotFound` (001/T025).
 
 - 🔴 **Control de cambios del back con CRITICIDAD ALTA**: proceso obligatorio con check de autorización
-  explícito (`docs/cambios-back/README.md`), plantilla de solicitud y **CB-001** (permisos INSERT/UPDATE del
-  administrador, ⏳ pendiente de autorización, no ejecutado).
+  explícito (`docs/cambios-back/README.md`), plantilla de solicitud y **CB-001** (permisos INSERT/UPDATE del administrador; luego resultó no requerida y no se ejecutó).
 
 - AI readiness del repo:
   - `AGENTS.md`, con las reglas obligatorias para agentes y personas: SDD, arquitectura por capas,
