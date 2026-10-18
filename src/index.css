@@ -1,8 +1,24 @@
-@import url('https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200..1000;1,200..1000&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 @import "tailwindcss";
 @import 'leaflet/dist/leaflet.css';
 
+@theme {
+  --color-brand-50: #e7f5ee;
+  --color-brand-600: #0e7c47;
+  --color-brand-700: #0b6239;
+  --color-navy-800: #14284b;
+  --color-navy-900: #0b2559;
+  --color-accent-50: #eaf2fe;
+  --color-accent-600: #1d5fd1;
+  --color-danger-50: #fdecec;
+  --color-danger-600: #e5343d;
+  --color-ink-500: #5b6b82;
+  --color-line: #d6dee8;
+  --color-canvas: #f4f7fb;
+  --font-sans: "Inter", system-ui, sans-serif;
+}
+
 body {
-  font-family: "Nunito", sans-serif;
+  font-family: var(--font-sans);
 }
