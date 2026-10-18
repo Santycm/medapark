@@ -10,6 +10,10 @@ vi.mock('../services/auth', () => ({
   getVerifiedTotpFactor: vi.fn().mockResolvedValue(null),
 }));
 
+vi.mock('../services/adminParking', () => ({
+  getMyParkingLot: vi.fn().mockResolvedValue({ ok: true, data: null }),
+}));
+
 import LogoutDialog from '../components/auth/LogoutDialog';
 import AdminLayout from '../components/layout/AdminLayout';
 import AuthLayout from '../components/layout/AuthLayout';

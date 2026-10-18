@@ -10,6 +10,14 @@ entradas en `[Unreleased]`, citando la feature y la tarea, por ejemplo `(001/T03
 
 ### Added
 
+- Feature 002 (gestión del parqueadero, HU3–HU7), sobre el back existente:
+  - dominio puro (`domain/parking`, esquemas Zod y mapeo del formulario) y `lib/format` (002/T003–T007, T016–T019);
+  - servicio `adminParking` con validación previa y orden de escritura seguro, y `parkingErrors` (002/T007–T009);
+  - `MyParkingProvider`, `useMyParking` y guards `RequireParking`/`RequireNoParking`; menú lateral condicionado (002/T010–T012);
+  - componentes `Checkbox`, `RadioCard`, `NumberStepper`, `Badge`, `Breadcrumbs`, `MapBase`, `LocationPicker` y `ParkingForm` (002/T013, T014, T020, T021);
+  - pantallas: panel "Mi parqueadero" (HU4), registrar (HU3), editar (HU5), configurar celdas (HU6) y gestionar ocupación (HU7) (002/T022–T033);
+  - 161 pruebas nuevas (298 en total); cobertura global de 93 %.
+  - ⚠️ Registrar, editar y configurar celdas necesitan la solicitud **CB-001** (permisos INSERT/UPDATE, 🔴 CRITICIDAD ALTA), **pendiente de autorización y no ejecutada**. Mientras tanto la app muestra "No tienes permisos para realizar esta acción…".
 - CI en GitHub Actions (`.github/workflows/ci.yml`): lint, typecheck, pruebas con cobertura mínima de 70 % y build en cada PR a `develop` o `main`; script `npm run test:coverage` (001/T050).
 - Mocks de Pencil (`design/mocks/`, 13 pantallas): 001 (login, MFA verificar y configurar, layout admin con modal de cierre de sesión, 404), 002 (panel, panel vacío, registrar, editar, configurar celdas, gestionar ocupación) y 003 (mapa con lista y detalle) (001/T014). El archivo `design/medapark.pen` debe guardarse desde Pencil.
 - Feature 001 (autenticación del administrador):
@@ -48,6 +56,11 @@ entradas en `[Unreleased]`, citando la feature y la tarea, por ejemplo `(001/T03
     la vista `public_parking_lots`, quickstart y 23 tareas.
 - Documentación fuente: historias de usuario (PDF y texto), prototipos por HU (`docs/prototipos/`) y logos
   (`docs/assets/logos/`).
+
+### Fixed
+
+- Formularios de registrar y editar: los campos de tarifa y capacidad de cada tipo de vehículo ahora van en una tarjeta propia (autos a la izquierda, motos a la derecha) que aparece o desaparece con su check (002/T021).
+- El mapa de la 002 mostraba "API KEY REQUIRED": CARTO ahora exige clave. `MapBase` usa los mosaicos de OpenStreetMap, sin API key (002/T014).
 
 ### Changed
 

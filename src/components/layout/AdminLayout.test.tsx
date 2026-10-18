@@ -1,7 +1,12 @@
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+vi.mock('../../services/adminParking', () => ({
+  getMyParkingLot: vi.fn().mockResolvedValue({ ok: true, data: null }),
+}));
+
 import { renderWithAuth } from '../../test/renderWithAuth';
 import AdminLayout from './AdminLayout';
 

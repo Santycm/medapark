@@ -19,7 +19,7 @@
 
 ## R3. Mapa (rediseño de `ParkingMap` y `ParkingMarker` del repo)
 
-- **Decision**: `ParkingMap` pasa a usar `MapBase` (002, CARTO Voyager) y `ParkingMarker` usa los íconos de
+- **Decision**: `ParkingMap` pasa a usar `MapBase` (002, mosaicos de OpenStreetMap) y `ParkingMarker` usa los íconos de
   `markerIcons` (002) con las variantes:
   - `disponible`: pin `brand-600`;
   - `lleno`: pin gris `#8A94A6`;

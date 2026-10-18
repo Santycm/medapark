@@ -11,6 +11,10 @@ vi.mock('../services/auth', () => ({
   signOutLocal: vi.fn(),
 }));
 
+vi.mock('../services/adminParking', () => ({
+  getMyParkingLot: vi.fn().mockResolvedValue({ ok: true, data: null }),
+}));
+
 import { renderWithAuth } from '../test/renderWithAuth';
 import AppRouter from './index';
 
@@ -49,7 +53,9 @@ describe('AppRouter', () => {
 
   it('/admin con aal2 muestra el panel dentro del layout de administración', async () => {
     at('/admin', 'autenticado');
-    expect(await screen.findByRole('heading', { name: 'Hola de nuevo' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: 'Aún no has registrado tu parqueadero' }),
+    ).toBeInTheDocument();
     expect(screen.getByRole('navigation', { name: 'Menú de administración' })).toBeInTheDocument();
     expect(screen.getByText('admin@medapark.co')).toBeInTheDocument();
   });
