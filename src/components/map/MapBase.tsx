@@ -9,7 +9,7 @@ type Props = {
   'aria-label'?: string;
 };
 
-/** Mapa base de MedaPark (CARTO Voyager, centrado en Medellín). */
+/** Mapa base de MedaPark (mosaicos de OpenStreetMap, sin API key, centrado en Medellín). */
 const MapBase = ({ children, className = 'h-full w-full', scrollWheelZoom = true, ...rest }: Props) => (
   <MapContainer
     center={MEDELLIN_CENTER}
@@ -19,8 +19,8 @@ const MapBase = ({ children, className = 'h-full w-full', scrollWheelZoom = true
     aria-label={rest['aria-label']}
   >
     <TileLayer
-      attribution="&copy; OpenStreetMap contributors &copy; CARTO"
-      url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+      attribution="&copy; OpenStreetMap contributors"
+      url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
     />
     {children}
   </MapContainer>

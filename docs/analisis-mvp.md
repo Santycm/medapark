@@ -40,7 +40,7 @@ Dependencias: 002 depende de 001 (sesión aal2). 003 depende del esquema de 002 
 | Frontend | Vite 8 + React 19 + TypeScript (strict) + Tailwind CSS 4 + `react-router` 8 + React Hook Form + Zod + `lucide-react` |
 | Backend | Supabase en la nube, proyecto `Medapark` (`msmfidnqmqntxbcucnsf`), **administrado por el equipo**. Esquema real en `docs/supabase-esquema-actual.md`. **Todo cambio en el back es 🔴 CRITICIDAD ALTA con check de autorización** (`docs/cambios-back/`); las features se diseñan primero para el back tal como está |
 | MFA | TOTP nativo de Supabase Auth, **reutilizando los servicios de MFA del repo** (`enrollMfa`, `createMfaChallenge`, `verifyMfa`, `getVerifiedTotpFactor`). Se vuelve **obligatorio**. Ver §5 |
-| Mapas | Leaflet 1.9 + `react-leaflet` 5 (ya en el repo), con mosaicos CARTO/OSM y sin API key |
+| Mapas | Leaflet 1.9 + `react-leaflet` 5 (ya en el repo), con mosaicos de OpenStreetMap y sin API key (CARTO ya exige clave) |
 | Ruta | Enlace `https://www.google.com/maps/dir/?api=1&destination=<lat>,<lng>` (sin API de Google) |
 | Pruebas | Vitest + Testing Library (cliente Supabase simulado) y validación manual con los `quickstart.md` |
 | Despliegue | Netlify publica `main` automáticamente. Gitflow: `develop` + `feature/NNN-nombre` |

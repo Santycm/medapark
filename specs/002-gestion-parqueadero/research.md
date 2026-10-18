@@ -74,9 +74,11 @@ Formato *Decision / Rationale / Alternatives considered*. No quedan `NEEDS CLARI
 ## R8. Mapa selector (Leaflet + react-leaflet 5, ya en el repo)
 
 - **Decision**: en `src/components/map/` (junto a `ParkingMap` y `ParkingMarker` existentes):
-  - `MapBase.tsx`: `MapContainer` + `TileLayer` CARTO Voyager
-    (`https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png`, atribución
-    `© OpenStreetMap contributors © CARTO`); centro `MEDELLIN_CENTER`, zoom 13; prop `scrollWheelZoom`.
+  - `MapBase.tsx`: `MapContainer` + `TileLayer` de OpenStreetMap
+    (`https://tile.openstreetmap.org/{z}/{x}/{y}.png`, atribución `© OpenStreetMap contributors`); centro
+    `MEDELLIN_CENTER`, zoom 13; prop `scrollWheelZoom`. **CARTO se descartó**: desde 2026 sus mosaicos exigen
+    API key y devuelven una imagen "API KEY REQUIRED". OSM no requiere clave y es el proveedor que ya usaba el
+    repo; su política de uso admite el tráfico del MVP (si crece, migrar a un proveedor con clave propia).
   - `markerIcons.ts`: `L.divIcon` con SVG inline (pin `brand-600` con carro) para evitar los PNG por defecto
     de Leaflet. La 003 lo reutiliza.
   - `LocationPicker.tsx`: marcador arrastrable y `useMapEvents({ click })`; redondeo a 6 decimales;

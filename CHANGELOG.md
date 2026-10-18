@@ -57,6 +57,10 @@ entradas en `[Unreleased]`, citando la feature y la tarea, por ejemplo `(001/T03
 - Documentación fuente: historias de usuario (PDF y texto), prototipos por HU (`docs/prototipos/`) y logos
   (`docs/assets/logos/`).
 
+### Fixed
+
+- El mapa de la 002 mostraba "API KEY REQUIRED": CARTO ahora exige clave. `MapBase` usa los mosaicos de OpenStreetMap, sin API key (002/T014).
+
 ### Changed
 
 - Pantallas MFA sin barra superior (el logo ya está en el panel) y ajustadas al alto de la ventana con unidades vh/vw; el login también se ajusta al alto sin scroll (001/T030, T037, T038).
