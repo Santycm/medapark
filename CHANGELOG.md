@@ -10,6 +10,7 @@ entradas en `[Unreleased]`, citando la feature y la tarea, por ejemplo `(001/T03
 
 ### Added
 
+- CI en GitHub Actions (`.github/workflows/ci.yml`): lint, typecheck, pruebas con cobertura mínima de 70 % y build en cada PR a `develop` o `main`; script `npm run test:coverage` (001/T050).
 - Mocks de Pencil (`design/mocks/`, 13 pantallas): 001 (login, MFA verificar y configurar, layout admin con modal de cierre de sesión, 404), 002 (panel, panel vacío, registrar, editar, configurar celdas, gestionar ocupación) y 003 (mapa con lista y detalle) (001/T014). El archivo `design/medapark.pen` debe guardarse desde Pencil.
 - Feature 001 (autenticación del administrador):
   - migración de `src/` a TypeScript estricto, con Vitest, ESLint TS y Prettier (001/T002–T013);

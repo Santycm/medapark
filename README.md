@@ -49,7 +49,7 @@ npm run dev              # http://localhost:5173
 ```
 
 Scripts: `npm run lint` · `npm run typecheck` · `npm test` (Vitest, con Supabase simulado) · `npm run build` ·
-`npm run format` · `npm run gen:types` (solo lectura; requiere `npx supabase login`).
+`npm run test:coverage` (exige ≥ 70 %) · `npm run format` · `npm run gen:types` (solo lectura; requiere `npx supabase login`).
 
 Antes de abrir un PR deben pasar `lint`, `typecheck`, `test` y `build`. Los PR van a `develop`, nunca a `main`.
 Todo cambio en el back de Supabase es de 🔴 CRITICIDAD ALTA y requiere el check de autorización
